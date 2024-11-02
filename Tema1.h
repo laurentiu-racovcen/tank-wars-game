@@ -17,6 +17,10 @@ namespace m1
         void Init() override;
 
     private:
+        void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
+        void AddTank1Mesh();
+        void AddTank2Mesh();
+
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
         void FrameEnd() override;
@@ -34,6 +38,8 @@ namespace m1
         void GenerateTerrain();
         float TerrainFunction(float x);
         void RenderTanks();
+        float GetTankPositionY(float x);
+        float GetTankAngle(float x);
 
     protected:
         glm::mat3 modelMatrix;
