@@ -1,7 +1,10 @@
 #pragma once
 
 #include "components/simple_scene.h"
+#include "Tank.h"
 
+// for 1920x1080 resolution is enough
+#define MAX_TERRAIN_POINTS_NR 2000
 
 namespace m1
 {
@@ -27,12 +30,17 @@ namespace m1
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
 
+        void FillTerrainVector(float startX, float endX);
         void GenerateTerrain();
         float TerrainFunction(float x);
+        void RenderTanks();
 
     protected:
         glm::mat3 modelMatrix;
-        glm::vec2 terrain_coords[2000]; // for 1920x1080 resolution is enough
-
+        glm::vec2 terrainPoints[MAX_TERRAIN_POINTS_NR];
+        unsigned int terrainPointsNr;
+        float windowSegmentSizeX;
+        Tank tank1;
+        Tank tank2;
     };
 }   // namespace m1
