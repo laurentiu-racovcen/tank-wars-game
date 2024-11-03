@@ -75,9 +75,16 @@ void Tema1::Init()
     tank1.cx = 50;
     tank2.cx = 50;
 
-    // add tanks meshes
+    // initialize turret angle to point upwards
+    tank1.turretAngle = 0;
+    tank2.turretAngle = 0;
+
+    // add tanks' meshes
     AddTank1Mesh();
     AddTank2Mesh();
+
+    // add tanks' turret mesh
+    AddTankTurretMesh();
 }
 
 float Tema1::TerrainFunction(float x)
@@ -187,16 +194,16 @@ void Tema1::AddTank1Mesh() {
     vector<VertexFormat> mid_bottom_tank_vertices
     {
         // Bottom part (slightly darker than the upper part)
-        VertexFormat(glm::vec3(-1, 0, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),       // Bottom-left    0 - 21
-        VertexFormat(glm::vec3(1, 0, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),        // Bottom-right   1 - 22
-        VertexFormat(glm::vec3(1.2f, 0.2, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),   // Top-right      2 - 23
-        VertexFormat(glm::vec3(-1.2f, 0.2, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),  // Top-left       3 - 24
+        VertexFormat(glm::vec3(-1, 0, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),       // Bottom-left    21
+        VertexFormat(glm::vec3(1, 0, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),        // Bottom-right   22
+        VertexFormat(glm::vec3(1.2f, 0.2, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),   // Top-right      23
+        VertexFormat(glm::vec3(-1.2f, 0.2, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),  // Top-left       24
 
         // Upper part
-        VertexFormat(glm::vec3(-1.4f, 0.2f, 0), glm::vec3(TANK1_COLOR)), // Bottom-left    4 - 25
-        VertexFormat(glm::vec3(1.4f, 0.2f, 0), glm::vec3(TANK1_COLOR)),  // Bottom-right   5 - 26
-        VertexFormat(glm::vec3(1.2f, 0.8, 0), glm::vec3(TANK1_COLOR)),   // Top-right      6 - 27
-        VertexFormat(glm::vec3(-1.2f, 0.8, 0), glm::vec3(TANK1_COLOR)),  // Top-left       7 - 28
+        VertexFormat(glm::vec3(-1.4f, 0.2f, 0), glm::vec3(TANK1_COLOR)), // Bottom-left    25
+        VertexFormat(glm::vec3(1.4f, 0.2f, 0), glm::vec3(TANK1_COLOR)),  // Bottom-right   26
+        VertexFormat(glm::vec3(1.2f, 0.8, 0), glm::vec3(TANK1_COLOR)),   // Top-right      27
+        VertexFormat(glm::vec3(-1.2f, 0.8, 0), glm::vec3(TANK1_COLOR)),  // Top-left       28
     };
 
     vector<unsigned int> mid_bottom_tank_indices =
@@ -251,16 +258,16 @@ void Tema1::AddTank2Mesh() {
     vector<VertexFormat> mid_bottom_tank_vertices
     {
         // Bottom part (slightly darker than the upper part)
-        VertexFormat(glm::vec3(-1, 0, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),       // Bottom-left    0 - 21
-        VertexFormat(glm::vec3(1, 0, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),        // Bottom-right   1 - 22
-        VertexFormat(glm::vec3(1.2f, 0.2, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),   // Top-right      2 - 23
-        VertexFormat(glm::vec3(-1.2f, 0.2, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),  // Top-left       3 - 24
+        VertexFormat(glm::vec3(-1, 0, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),       // Bottom-left    21
+        VertexFormat(glm::vec3(1, 0, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),        // Bottom-right   22
+        VertexFormat(glm::vec3(1.2f, 0.2, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),   // Top-right      23
+        VertexFormat(glm::vec3(-1.2f, 0.2, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),  // Top-left       24
 
         // Upper part
-        VertexFormat(glm::vec3(-1.4f, 0.2f, 0), glm::vec3(TANK2_COLOR)), // Bottom-left    4 - 25
-        VertexFormat(glm::vec3(1.4f, 0.2f, 0), glm::vec3(TANK2_COLOR)),  // Bottom-right   5 - 26
-        VertexFormat(glm::vec3(1.2f, 0.8, 0), glm::vec3(TANK2_COLOR)),   // Top-right      6 - 27
-        VertexFormat(glm::vec3(-1.2f, 0.8, 0), glm::vec3(TANK2_COLOR)),  // Top-left       7 - 28
+        VertexFormat(glm::vec3(-1.4f, 0.2f, 0), glm::vec3(TANK2_COLOR)), // Bottom-left    25
+        VertexFormat(glm::vec3(1.4f, 0.2f, 0), glm::vec3(TANK2_COLOR)),  // Bottom-right   26
+        VertexFormat(glm::vec3(1.2f, 0.8, 0), glm::vec3(TANK2_COLOR)),   // Top-right      27
+        VertexFormat(glm::vec3(-1.2f, 0.8, 0), glm::vec3(TANK2_COLOR)),  // Top-left       28
     };
 
     vector<unsigned int> mid_bottom_tank_indices =
@@ -280,6 +287,26 @@ void Tema1::AddTank2Mesh() {
 
     // Actually create the mesh from the data
     CreateMesh("tank2", vertices, indices);
+}
+
+void Tema1::AddTankTurretMesh()
+{
+    vector<VertexFormat> vertices
+    {
+        VertexFormat(glm::vec3(-0.5, 0, 0), glm::vec3(0, 0, 0)),  // Bottom-left    0
+        VertexFormat(glm::vec3(0.5, 0, 0), glm::vec3(0, 0, 0)),   // Bottom-right   1
+        VertexFormat(glm::vec3(0.5, 1, 0), glm::vec3(0, 0, 0)),   // Top-right      2
+        VertexFormat(glm::vec3(-0.5, 1, 0), glm::vec3(0, 0, 0))   // Top-left       3
+    };
+
+    vector<unsigned int> indices
+    {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    // Create the mesh from the data
+    CreateMesh("tank-turret", vertices, indices);
 }
 
 void Tema1::FrameStart()
@@ -359,17 +386,46 @@ void Tema1::RenderTanks()
     float tank1Angle = GetTankAngle(tank1.positionX);
     float tank2Angle = GetTankAngle(tank2.positionX);
 
+    // tank1
     modelMatrix = glm::mat3(1);
     modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3); // -3 for the tank to enter in terrain surface
     modelMatrix *= transform2D::Rotate(tank1Angle);
     modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
     RenderMesh2D(meshes["tank1"], shaders["VertexColor"], modelMatrix);
 
+    // tank1 turret
+
+    //float a, b, c, dx, dy;
+    //a = tank1.positionY + 32 - (tank1.positionY - 3); // disk center height
+    //b = 0.8 * 40; // tank height
+    //c = sqrt(pow(a,2) + pow(b, 2) - 2*cos(-tank1Angle));
+    //dy = (-pow(b,2) + pow(c,2) + pow(a,2)) / (2*a);
+    //dx = sqrt(pow(c,2) - pow(dy,2));
+
+    modelMatrix = glm::mat3(1);
+    
+    modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY);
+    //modelMatrix *= transform2D::Translate(0, 0);
+    //modelMatrix *= transform2D::Rotate(tank1.turretAngle);
+    //modelMatrix *= transform2D::Translate(0, TANK_SIZE);
+    //modelMatrix *= transform2D::Rotate(tank1.turretAngle);
+    modelMatrix *= transform2D::Rotate(tank1.turretAngle);
+    modelMatrix *= transform2D::Scale(10, 50);
+    RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
+
+    // tank2
     modelMatrix = glm::mat3(1);
     modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY - 3); // -3 for the tank to enter in terrain surface
     modelMatrix *= transform2D::Rotate(tank2Angle);
     modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
     RenderMesh2D(meshes["tank2"], shaders["VertexColor"], modelMatrix);
+
+    //// tank2 turret
+    //modelMatrix = glm::mat3(1);
+    //modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3); // -3 for the tank to enter in terrain surface
+    //modelMatrix *= transform2D::Rotate(tank1Angle);
+    //modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
+    //RenderMesh2D(meshes["tank1-turret"], shaders["VertexColor"], modelMatrix);
 }
 
 void Tema1::Update(float deltaTimeSeconds)

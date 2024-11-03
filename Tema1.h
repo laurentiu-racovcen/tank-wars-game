@@ -20,6 +20,7 @@ namespace m1
         void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
         void AddTank1Mesh();
         void AddTank2Mesh();
+        void AddTankTurretMesh();
 
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;

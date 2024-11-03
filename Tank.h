@@ -6,4 +6,5 @@ class Tank {
 		float positionY;
 		float rotationAngle;
 		float cx;
+		float turretAngle;
 };
