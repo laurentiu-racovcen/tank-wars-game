@@ -6,24 +6,24 @@
 #include "lab_m1/Tema1/transform2D.h"
 #include "lab_m1/Tema1/object2D.h"
 
-#define SKY_COLOR 0.5705, 0.688, 0.7529
-#define TERRAIN_COLOR 0.984, 0.8078, 0.290
-#define TANK1_COLOR 0.5, 0.3, 0.2
-#define TANK2_COLOR 0.5, 0.4, 0.6
-#define TANK_SIZE 40
-#define TANK_SPEED 250
-#define TANK1_INITIAL_X_POS 200
-#define TANK2_INITIAL_X_POS 1800
+// environment colors
+#define SKY_COLOR         0.5705, 0.688, 0.7529
+#define TERRAIN_COLOR     0.984, 0.8078, 0.290
+
+// scale factor on OY-axis
+#define SCALE_Y           250
+
+// the function of the terrain
+#define TERRAIN_FUNCTION  0.49 * sin(x) + \
+                          0.15 * sin(0.8 * x) + \
+                          0.3 * sin(3.3 * x) + 1.7f
+
+// start and end coordinates of the function on OX-axis
+#define FUNCTION_START_X  23.5f
+#define FUNCTION_END_X    30.5f
 
 using namespace std;
 using namespace m1;
-
-
-/*
- *  To find out more about `FrameStart`, `Update`, `FrameEnd`
- *  and the order in which they are called, see `world.cpp`.
- */
-
 
 Tema1::Tema1()
 {
@@ -58,11 +58,11 @@ void Tema1::Init()
     // initialize terrain points number
     terrainPointsNr = 0;
 
-    // initialize window segment size on X-axis
+    // initialize window segment size on OX-axis
     windowSegmentSizeX = 1;
 
     // Fill the terrain points vector
-    FillTerrainVector(23.5f, 30.5f);
+    FillTerrainVector(FUNCTION_START_X, FUNCTION_END_X);
 
     // initialize tanks position
     tank1.positionX = TANK1_INITIAL_X_POS;
@@ -89,7 +89,7 @@ void Tema1::Init()
 
 float Tema1::TerrainFunction(float x)
 {
-    return (float)0.49 * sin(x) + 0.15 * sin(0.8 * x) + 0.3 * sin(3.3 * x) + 1.7f;
+    return (float) TERRAIN_FUNCTION;
 }
 
 void Tema1::FillTerrainVector(float startX, float endX)
@@ -97,13 +97,10 @@ void Tema1::FillTerrainVector(float startX, float endX)
     terrainPointsNr = 1920 / windowSegmentSizeX + 1; // 1 extra point to complete the graph
     float functionSegmentSizeX = (endX - startX) / terrainPointsNr;
 
-    // scale factor on Y-axis
-    float scaleY = 250;
-
     for (size_t i = 0; i < terrainPointsNr; i++) {
         // store all (x, y) points in terrainPoints vector
         float x = i * windowSegmentSizeX;
-        float y = scaleY * TerrainFunction(startX + i * functionSegmentSizeX);
+        float y = SCALE_Y * TerrainFunction(startX + i * functionSegmentSizeX);
         terrainPoints[i] = glm::vec2(x, y);
     }
 }
@@ -293,10 +290,10 @@ void Tema1::AddTankTurretMesh()
 {
     vector<VertexFormat> vertices
     {
-        VertexFormat(glm::vec3(-0.5, 0, 0), glm::vec3(0, 0, 0)),  // Bottom-left    0
-        VertexFormat(glm::vec3(0.5, 0, 0), glm::vec3(0, 0, 0)),   // Bottom-right   1
-        VertexFormat(glm::vec3(0.5, 1, 0), glm::vec3(0, 0, 0)),   // Top-right      2
-        VertexFormat(glm::vec3(-0.5, 1, 0), glm::vec3(0, 0, 0))   // Top-left       3
+        VertexFormat(glm::vec3(-0.5, 0, 0), glm::vec3(TURRET_COLOR)),  // Bottom-left    0
+        VertexFormat(glm::vec3(0.5, 0, 0), glm::vec3(TURRET_COLOR)),   // Bottom-right   1
+        VertexFormat(glm::vec3(0.5, 1, 0), glm::vec3(TURRET_COLOR)),   // Top-right      2
+        VertexFormat(glm::vec3(-0.5, 1, 0), glm::vec3(TURRET_COLOR))   // Top-left       3
     };
 
     vector<unsigned int> indices
@@ -394,23 +391,12 @@ void Tema1::RenderTanks()
     RenderMesh2D(meshes["tank1"], shaders["VertexColor"], modelMatrix);
 
     // tank1 turret
-
-    //float a, b, c, dx, dy;
-    //a = tank1.positionY + 32 - (tank1.positionY - 3); // disk center height
-    //b = 0.8 * 40; // tank height
-    //c = sqrt(pow(a,2) + pow(b, 2) - 2*cos(-tank1Angle));
-    //dy = (-pow(b,2) + pow(c,2) + pow(a,2)) / (2*a);
-    //dx = sqrt(pow(c,2) - pow(dy,2));
-
     modelMatrix = glm::mat3(1);
-    
-    modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY);
-    //modelMatrix *= transform2D::Translate(0, 0);
-    //modelMatrix *= transform2D::Rotate(tank1.turretAngle);
-    //modelMatrix *= transform2D::Translate(0, TANK_SIZE);
-    //modelMatrix *= transform2D::Rotate(tank1.turretAngle);
-    modelMatrix *= transform2D::Rotate(tank1.turretAngle);
-    modelMatrix *= transform2D::Scale(10, 50);
+    modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3);
+    modelMatrix *= transform2D::Rotate(tank1Angle);
+    modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
+    modelMatrix *= transform2D::Rotate(tank1.turretAngle - tank1Angle);
+    modelMatrix *= transform2D::Scale(TURRET_WIDTH, TURRET_LENGTH);
     RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
 
     // tank2
@@ -420,12 +406,14 @@ void Tema1::RenderTanks()
     modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
     RenderMesh2D(meshes["tank2"], shaders["VertexColor"], modelMatrix);
 
-    //// tank2 turret
-    //modelMatrix = glm::mat3(1);
-    //modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3); // -3 for the tank to enter in terrain surface
-    //modelMatrix *= transform2D::Rotate(tank1Angle);
-    //modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
-    //RenderMesh2D(meshes["tank1-turret"], shaders["VertexColor"], modelMatrix);
+    // tank2 turret
+    modelMatrix = glm::mat3(1);
+    modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY - 3);
+    modelMatrix *= transform2D::Rotate(tank2Angle);
+    modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
+    modelMatrix *= transform2D::Rotate(tank2.turretAngle - tank2Angle);
+    modelMatrix *= transform2D::Scale(TURRET_WIDTH, TURRET_LENGTH);
+    RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
 }
 
 void Tema1::Update(float deltaTimeSeconds)
@@ -440,7 +428,7 @@ void Tema1::FrameEnd()
 
 void Tema1::OnInputUpdate(float deltaTime, int mods)
 {
-    // left-right movement (with X-axis window limits)
+    // left-right movement (with OX-axis window limits)
     if ((window->KeyHold(GLFW_KEY_A) == true) && (tank1.positionX - deltaTime * TANK_SPEED > 0)) {
         tank1.positionX -= deltaTime * TANK_SPEED;
     } else if ((window->KeyHold(GLFW_KEY_D) == true) && (tank1.positionX + deltaTime * TANK_SPEED < 1920)) {
@@ -451,6 +439,18 @@ void Tema1::OnInputUpdate(float deltaTime, int mods)
         tank2.positionX -= deltaTime * TANK_SPEED;
     } else if ((window->KeyHold(GLFW_KEY_RIGHT) == true) && (tank2.positionX + deltaTime * TANK_SPEED < 1920)) {
         tank2.positionX += deltaTime * TANK_SPEED;
+    }
+
+    if (window->KeyHold(GLFW_KEY_W) == true) {
+        tank1.turretAngle += 2 * deltaTime;
+    } else if (window->KeyHold(GLFW_KEY_S) == true) {
+        tank1.turretAngle -= 2 * deltaTime;
+    }
+
+    if (window->KeyHold(GLFW_KEY_UP) == true) {
+        tank2.turretAngle -= 2 * deltaTime;
+    } else if (window->KeyHold(GLFW_KEY_DOWN) == true) {
+        tank2.turretAngle += 2 * deltaTime;
     }
 }
 
