@@ -59,7 +59,7 @@ void Tema1::Init()
     terrainPointsNr = 0;
 
     // initialize window segment size on OX-axis
-    windowSegmentSizeX = 1;
+    windowSegmentSizeX = 20;
 
     // Fill the terrain points vector
     FillTerrainVector(FUNCTION_START_X, FUNCTION_END_X);
@@ -317,20 +317,41 @@ void Tema1::FrameStart()
     glViewport(0, 0, resolution.x, resolution.y);
 }
 
-void Tema1::GenerateTerrain()
+void Tema1::GenerateTerrain(float deltaTimeSeconds)
 {
     for (unsigned int i = 0; i < terrainPointsNr; i++) {
 
+        //cout << "time=" << deltaTimeSeconds;
+        //cout << "diff = " << abs(terrainPoints[i].y - terrainPoints[i + 1].y) << endl;
+        //if (i==40) cout << "py_1 = " << terrainPoints[40].y << " py_2 = " << terrainPoints[41].y << ", diff = " << abs(terrainPoints[40].y - terrainPoints[41].y) << endl;
+
+        float dy = abs(terrainPoints[i].y - terrainPoints[i + 1].y);
+        float landslide_speed = 2.0f/3;
+
+        // landslide animation
+        if (dy > 1.2f) {
+            if (terrainPoints[i].y > terrainPoints[i+1].y) {
+                terrainPoints[i].y -= dy*landslide_speed*deltaTimeSeconds;
+                terrainPoints[i+1].y += dy*landslide_speed*deltaTimeSeconds;
+            } else if (terrainPoints[i].y < terrainPoints[i+1].y) {
+                terrainPoints[i].y += dy*landslide_speed*deltaTimeSeconds;
+                terrainPoints[i+1].y -= dy*landslide_speed*deltaTimeSeconds;
+            }
+            //if (i == 40) cout << "1 modif: py_1 = " << terrainPoints[40].y << " py_2 = " << terrainPoints[41].y << ", diff = " << abs(terrainPoints[40].y - terrainPoints[41].y) << endl;
+        }
+
         // initialize this step's segment limits
+
+        // first point
         float x1 = terrainPoints[i].x;
         float y1 = terrainPoints[i].y;
 
-        float x2 = terrainPoints[i+1].x;
-        float y2 = terrainPoints[i+1].y;
+        // second point
+        float x2 = terrainPoints[i + 1].x;
+        float y2 = terrainPoints[i + 1].y;
 
         modelMatrix = glm::mat3(1);
         modelMatrix *= transform2D::Translate(x1, 0);
-
         modelMatrix *= transform2D::Skew(glm::vec2(x1, y1), glm::vec2(x2, y2));
         modelMatrix *= transform2D::Scale(windowSegmentSizeX, y1);
         modelMatrix *= transform2D::Translate(0, 0);
@@ -418,7 +439,7 @@ void Tema1::RenderTanks()
 
 void Tema1::Update(float deltaTimeSeconds)
 {
-    GenerateTerrain();
+    GenerateTerrain(deltaTimeSeconds);
     RenderTanks();
 }
 

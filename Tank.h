@@ -3,7 +3,7 @@
 #define TANK1_COLOR          0.5, 0.3, 0.2
 #define TANK2_COLOR          0.5, 0.4, 0.6
 #define TURRET_COLOR         0.2, 0.2, 0.2
-#define TANK_SIZE            200
+#define TANK_SIZE            40
 #define TANK_SPEED           250
 #define TANK1_INITIAL_X_POS  200
 #define TANK2_INITIAL_X_POS  1800

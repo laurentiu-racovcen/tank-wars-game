@@ -36,7 +36,7 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
         void FillTerrainVector(float startX, float endX);
-        void GenerateTerrain();
+        void GenerateTerrain(float deltaTimeSeconds);
         float TerrainFunction(float x);
         void RenderTanks();
         float GetTankPositionY(float x);
