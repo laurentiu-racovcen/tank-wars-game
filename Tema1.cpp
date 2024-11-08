@@ -14,13 +14,13 @@
 #define SCALE_Y           250
 
 // the function of the terrain
-#define TERRAIN_FUNCTION  0.49 * sin(x) + \
-                          0.15 * sin(0.8 * x) + \
-                          0.3 * sin(3.3 * x) + 1.7f
+#define TERRAIN_FUNCTION  0.5 * sin(x) + \
+                          0.5 * sin(0.5 * x) + \
+                          2.9 * sin(3 * x) + 2.0f
 
 // start and end coordinates of the function on OX-axis
-#define FUNCTION_START_X  23.5f
-#define FUNCTION_END_X    30.5f
+#define FUNCTION_START_X  5.5f
+#define FUNCTION_END_X    12.2f
 
 using namespace std;
 using namespace m1;
@@ -59,7 +59,7 @@ void Tema1::Init()
     terrainPointsNr = 0;
 
     // initialize window segment size on OX-axis
-    windowSegmentSizeX = 20;
+    windowSegmentSizeX = 2;
 
     // Fill the terrain points vector
     FillTerrainVector(FUNCTION_START_X, FUNCTION_END_X);
@@ -319,17 +319,27 @@ void Tema1::FrameStart()
 
 void Tema1::GenerateTerrain(float deltaTimeSeconds)
 {
+    float threshold = 1.2f;
+    // check if any of the array points have a higher difference than the limit
+    bool isHigherPoint = false;
+    for (unsigned int i = 0; (i < terrainPointsNr) && !isHigherPoint; i++) {
+        float dy = abs(terrainPoints[i].y - terrainPoints[i + 1].y);
+        //if (i==500) cout <<"y1=" << terrainPoints[i].y << "y2=" << terrainPoints[i+1].y << " diff= " << dy << endl;
+        // check if is higher than the limit
+        if (dy > threshold) {
+            isHigherPoint = true;
+            //cout << "diff = " << dy << "\n";
+        }
+    }
+    if (!isHigherPoint) cout << "AAA!! Done\n";
+
     for (unsigned int i = 0; i < terrainPointsNr; i++) {
 
-        //cout << "time=" << deltaTimeSeconds;
-        //cout << "diff = " << abs(terrainPoints[i].y - terrainPoints[i + 1].y) << endl;
-        //if (i==40) cout << "py_1 = " << terrainPoints[40].y << " py_2 = " << terrainPoints[41].y << ", diff = " << abs(terrainPoints[40].y - terrainPoints[41].y) << endl;
-
-        float dy = abs(terrainPoints[i].y - terrainPoints[i + 1].y);
-        float landslide_speed = 2.0f/3;
-
         // landslide animation
-        if (dy > 1.2f) {
+        // deltaTime limitation in order to NOT get to much terrain difference on lag
+        if (isHigherPoint && deltaTimeSeconds < 0.1f) {
+            float dy = abs(terrainPoints[i].y - terrainPoints[i + 1].y);
+            float landslide_speed = 40.0f / 3;
             if (terrainPoints[i].y > terrainPoints[i+1].y) {
                 terrainPoints[i].y -= dy*landslide_speed*deltaTimeSeconds;
                 terrainPoints[i+1].y += dy*landslide_speed*deltaTimeSeconds;
@@ -337,7 +347,6 @@ void Tema1::GenerateTerrain(float deltaTimeSeconds)
                 terrainPoints[i].y += dy*landslide_speed*deltaTimeSeconds;
                 terrainPoints[i+1].y -= dy*landslide_speed*deltaTimeSeconds;
             }
-            //if (i == 40) cout << "1 modif: py_1 = " << terrainPoints[40].y << " py_2 = " << terrainPoints[41].y << ", diff = " << abs(terrainPoints[40].y - terrainPoints[41].y) << endl;
         }
 
         // initialize this step's segment limits
