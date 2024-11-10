@@ -21,6 +21,7 @@ namespace m1
         void AddTank1Mesh();
         void AddTank2Mesh();
         void AddTankTurretMesh();
+        void AddTankProjectileMesh();
 
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
@@ -38,9 +39,12 @@ namespace m1
         void FillTerrainVector(float startX, float endX);
         void GenerateTerrain(float deltaTimeSeconds);
         float TerrainFunction(float x);
-        void RenderTanks();
+        void InitTanksProjectilesData();
+        void RenderTanks(float deltaTimeSeconds);
+        void RenderTanksProjectiles(float deltaTimeSeconds);
         float GetTankPositionY(float x);
         float GetTankAngle(float x);
+        float GetProjectilePositionY(float x0, float t);
 
     protected:
         glm::mat3 modelMatrix;
