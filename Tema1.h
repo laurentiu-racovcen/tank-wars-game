@@ -44,7 +44,7 @@ namespace m1
         void RenderTanksProjectiles(float deltaTimeSeconds);
         float GetTankPositionY(float x);
         float GetTankAngle(float x);
-        float GetProjectilePositionY(float x0, float t);
+        float GetProjectilePositionY(float y0, float initialSpeedY, float t);
 
     protected:
         glm::mat3 modelMatrix;

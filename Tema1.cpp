@@ -116,17 +116,25 @@ void Tema1::InitTanksProjectilesData()
         tank1.projectiles[i].isIdle = true;
         tank2.projectiles[i].isIdle = true;
 
-        tank1.projectiles[i].initialPositionX = 0;
-        tank2.projectiles[i].initialPositionX = 0;
+        tank1.projectiles[i].x0 = 0;
+        tank2.projectiles[i].x0 = 0;
 
-        tank1.projectiles[i].currentPositionX = 0;
-        tank2.projectiles[i].currentPositionX = 0;
+        tank1.projectiles[i].y0 = 0;
+        tank2.projectiles[i].y0= 0;
 
-        tank1.projectiles[i].currentPositionY = 0;
-        tank2.projectiles[i].currentPositionY = 0;
+        tank1.projectiles[i].time = 0;
+        tank2.projectiles[i].time = 0;
 
-        tank1.projectiles[i].launchTime = 0;
-        tank2.projectiles[i].launchTime = 0;
+        tank1.projectiles[i].x = 0;
+        tank2.projectiles[i].x = 0;
+
+        tank1.projectiles[i].y = 0;
+        tank2.projectiles[i].y = 0;
+
+        tank1.projectiles[i].initialSpeedX = 0;
+        tank1.projectiles[i].initialSpeedY = 0;
+        tank2.projectiles[i].initialSpeedX = 0;
+        tank2.projectiles[i].initialSpeedY = 0;
     }
 }
 
@@ -523,27 +531,29 @@ void Tema1::RenderTanks(float deltaTimeSeconds)
     RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
 }
 
-float Tema1::GetProjectilePositionY(float x0, float t) {
-    return GRAVITATIONAL_FORCE * (t * t / 2) + PROJECTILE_INITIAL_SPEED * t + x0;
+float Tema1::GetProjectilePositionY(float y0, float initialSpeedY, float t) {
+    return GRAVITATIONAL_FORCE * (t * t / 2) + initialSpeedY * t + y0;
 }
 
 void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
 {
     // position of the tank1 projectiles
     for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
-        if (tank1.projectiles[i].isIdle) {
-            // the projectile has NOT been launched
-            modelMatrix = glm::mat3(1);
-            modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3);
-            modelMatrix *= transform2D::Rotate(tank1.rotationAngle);
-            modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
-            modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
-            RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
-        } else {
+        if (!tank1.projectiles[i].isIdle) {
             // the projectile has been launched
             modelMatrix = glm::mat3(1);
-            float projectilePosY = GetProjectilePositionY(tank1.projectiles[i].initialPositionX, tank1.projectiles[i].launchTime + deltaTimeSeconds);
-            modelMatrix *= transform2D::Translate(tank1.projectiles[i].launchTime + tank1.projectiles[i].initialPositionX, projectilePosY);
+
+            // update projectile's attributes of movement
+            tank1.projectiles[i].time += 5 * deltaTimeSeconds;
+            tank1.projectiles[i].x = tank1.projectiles[i].x0 + tank1.projectiles[i].time * tank1.projectiles[i].initialSpeedX;
+            tank1.projectiles[i].y = GetProjectilePositionY(tank1.projectiles[i].y0, tank1.projectiles[i].initialSpeedY, tank1.projectiles[i].time);
+
+            //cout << "projectile " << i << "time = " << tank1.projectiles[i].time << "\n";
+            //cout << "pos x = " << tank1.projectiles[i].x << "pos y = " << tank1.projectiles[i].y << "\n";
+            //cout << "tank angle = " << tank1.rotationAngle << "turret angle = " << tank1.turretAngle << "\n";
+            //cout << "i_speed x = " << tank1.projectiles[i].initialSpeedX << "i_speed y = " << tank1.projectiles[i].initialSpeedY << "\n";
+
+            modelMatrix *= transform2D::Translate(tank1.projectiles[i].x, tank1.projectiles[i].y);
             modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
             RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
         }
@@ -551,19 +561,21 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
 
     // position of the tank2 projectiles
     for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
-        if (tank2.projectiles[i].isIdle) {
-            // the projectile has NOT been launched
-            modelMatrix = glm::mat3(1);
-            modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3);
-            modelMatrix *= transform2D::Rotate(tank1.rotationAngle);
-            modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
-            modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
-            RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
-        } else {
+        if (!tank2.projectiles[i].isIdle) {
             // the projectile has been launched
             modelMatrix = glm::mat3(1);
-            float projectilePosY = GetProjectilePositionY(tank1.projectiles[i].initialPositionX, tank1.projectiles[i].launchTime + deltaTimeSeconds);
-            modelMatrix *= transform2D::Translate(tank1.projectiles[i].launchTime + tank1.projectiles[i].initialPositionX, projectilePosY);
+
+            // update projectile's attributes of movement
+            tank2.projectiles[i].time += 5 * deltaTimeSeconds;
+            tank2.projectiles[i].x = tank2.projectiles[i].x0 + tank2.projectiles[i].time * tank2.projectiles[i].initialSpeedX;
+            tank2.projectiles[i].y = GetProjectilePositionY(tank2.projectiles[i].y0, tank2.projectiles[i].initialSpeedY, tank2.projectiles[i].time);
+
+            //cout << "projectile " << i << "time = " << tank2.projectiles[i].time << "\n";
+            //cout << "pos x = " << tank2.projectiles[i].x << "pos y = " << tank2.projectiles[i].y << "\n";
+            //cout << "tank angle = " << tank2.rotationAngle << "turret angle = " << tank2.turretAngle << "\n";
+            //cout << "i_speed x = " << tank2.projectiles[i].initialSpeedX << "i_speed y = " << tank2.projectiles[i].initialSpeedY << "\n";
+
+            modelMatrix *= transform2D::Translate(tank2.projectiles[i].x, tank2.projectiles[i].y);
             modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
             RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
         }
@@ -616,19 +628,27 @@ void Tema1::OnKeyPress(int key, int mods)
             // launch the first available idle projectile
             if (tank1.projectiles[i].isIdle) {
                 tank1.projectiles[i].isIdle = false;
-                tank1.projectiles[i].initialPositionX = tank1.positionX;
+                tank1.projectiles[i].x0 = tank1.positionX;
+                tank1.projectiles[i].y0 = tank1.positionY + TANK_SIZE;
+                tank1.projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank1.turretAngle + M_PI_2);
+                tank1.projectiles[i].initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank1.turretAngle + M_PI_2);
                 break;
             }
         }
     }
 
     if (key == GLFW_KEY_ENTER) {
-        // launch an available projectile from tank1
+        // launch an available projectile from tank2
         for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
             // launch the first available idle projectile
             if (tank2.projectiles[i].isIdle) {
                 tank2.projectiles[i].isIdle = false;
-                tank2.projectiles[i].initialPositionX = tank2.positionX;
+                //tank2.projectiles[i].x0 = tank2.positionX * cos(tank2.rotationAngle) - tank2.positionY * sin(tank2.rotationAngle);
+                //tank2.projectiles[i].y0 = tank2.positionX * sin(tank2.rotationAngle) + tank2.positionY * cos(tank2.rotationAngle);
+                tank2.projectiles[i].x0 = tank2.positionX;
+                tank2.projectiles[i].y0 = tank2.positionY + TANK_SIZE;
+                tank2.projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank2.turretAngle + M_PI_2);
+                tank2.projectiles[i].initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank2.turretAngle + M_PI_2);
                 break;
             }
         }

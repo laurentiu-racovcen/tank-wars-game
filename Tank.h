@@ -12,7 +12,7 @@
 #define TURRET_WIDTH         1.0f * TANK_SIZE / 7
 #define TURRET_LENGTH        TANK_SIZE * 1.35f
 #define PROJECTILE_SIZE      1.0f * TANK_SIZE / 7
-#define MAX_PROJECTILES_NR   10
+#define MAX_PROJECTILES_NR   100
 
 class Tank {
 	public:
