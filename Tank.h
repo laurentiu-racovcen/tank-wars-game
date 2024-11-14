@@ -6,6 +6,7 @@
 #define TANK1_COLOR          0.5, 0.3, 0.2
 #define TANK2_COLOR          0.5, 0.4, 0.6
 #define TURRET_COLOR         0.2, 0.2, 0.2
+#define HEALTH_BAR_COLOR     1, 1, 1
 #define TANK_SIZE            40
 #define TANK_SPEED           250
 #define TANK1_INITIAL_X_POS  200
@@ -14,6 +15,7 @@
 #define TURRET_LENGTH        TANK_SIZE * 1.35f
 #define PROJECTILE_SIZE      1.0f * TANK_SIZE / 5.5f
 #define MAX_PROJECTILES_NR   30
+#define MAX_HEALTH_POINTS    100
 
 class Tank {
 	public:

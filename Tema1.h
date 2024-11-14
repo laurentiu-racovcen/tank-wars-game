@@ -22,6 +22,8 @@ namespace m1
         void AddTank2Mesh();
         void AddTankTurretMesh();
         void AddTankProjectileMesh();
+        void AddHealthBarBorderMesh();
+        void AddHealthBarMesh();
 
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;

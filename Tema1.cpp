@@ -103,9 +103,12 @@ void Tema1::Init()
     // add tank turret mesh
     AddTankTurretMesh();
 
-    // add tank projectile mesh
-    AddTankProjectileMesh();
+    // add health bar mesh
+    AddHealthBarBorderMesh();
+    AddHealthBarMesh();
 
+    // add and init tank projectile mesh
+    AddTankProjectileMesh();
     InitTanksProjectilesData();
 }
 
@@ -344,12 +347,12 @@ void Tema1::AddTankProjectileMesh()
     // initialize the first vertex (x,y) = (1,0) in the vertices vector
 
     // add origin of (x,y) = (0, 0)
-    vertices.push_back(VertexFormat(glm::vec3(0, 0, 0), glm::vec3(0, 1, 1)));
+    vertices.push_back(VertexFormat(glm::vec3(0, 0, 0), glm::vec3(PROJECTILE_COLOR)));
 
     // insert all the vertices of the disk
     for (unsigned int i = 1; i <= k; i++) {
         vertices.push_back(VertexFormat(glm::vec3(cos(((float)i / k) * 2 * 3.14f), sin(((float)i / k) * 2 * 3.14f), 0),
-            glm::vec3(0, 1, 1)));
+            glm::vec3(PROJECTILE_COLOR)));
     }
 
     // insert all the indices of the disk
@@ -368,6 +371,69 @@ void Tema1::AddTankProjectileMesh()
     CreateMesh("projectile", vertices, indices);
 }
 
+void Tema1::AddHealthBarBorderMesh()
+{
+    vector<VertexFormat> vertices
+    {
+        VertexFormat(glm::vec3(-2.8f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),     // outside-Bottom-left    0
+        VertexFormat(glm::vec3(2.8f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),      // outside-Bottom-right   1
+        VertexFormat(glm::vec3(2.8f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // outside-Top-right      2
+        VertexFormat(glm::vec3(-2.8f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // outside-Top-left       3
+
+        VertexFormat(glm::vec3(-2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Bottom-left     4
+        VertexFormat(glm::vec3(2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Bottom-right    5
+        VertexFormat(glm::vec3(2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Top-right       6
+        VertexFormat(glm::vec3(-2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Top-left        7
+
+        VertexFormat(glm::vec3(-2.7f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),     // margin-Bottom-left     8
+        VertexFormat(glm::vec3(2.7f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),      // margin-Bottom-right    9
+        VertexFormat(glm::vec3(2.7f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // margin-Top-right       10
+        VertexFormat(glm::vec3(-2.7f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // margin-Top-left        11
+    };
+
+    vector<unsigned int> indices
+    {
+        // bottom side
+        4, 8, 5,
+        8, 9, 5,
+
+        // right side
+        9, 1, 10,
+        1, 2, 10,
+
+        // top side
+        11, 7, 6,
+        11, 6, 10,
+
+        // left side
+        0, 8, 3,
+        3, 8, 11
+    };
+
+    // Create the mesh from the data
+    CreateMesh("health-bar-border", vertices, indices);
+}
+
+void Tema1::AddHealthBarMesh()
+{
+    vector<VertexFormat> vertices
+    {
+        VertexFormat(glm::vec3(-2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Bottom-left     0
+        VertexFormat(glm::vec3(2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Bottom-right    1
+        VertexFormat(glm::vec3(2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Top-right       2
+        VertexFormat(glm::vec3(-2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Top-left        3
+    };
+
+    vector<unsigned int> indices
+    {
+        0, 1, 2,
+        0, 2, 3,
+    };
+
+    // Create the mesh from the data
+    CreateMesh("health-bar", vertices, indices);
+}
+
 void Tema1::FrameStart()
 {
     // Clears the color buffer (using the previously set color) and depth buffer
@@ -383,9 +449,9 @@ void Tema1::UpdateTerrain(float deltaTimeSeconds)
 {
     /* ------------- Sliding animation ------------- */
 
-    // check if any of the array points have a higher difference than the limit
+    // check if any of the array points have a higher difference than the threshold
     bool isHigherPoint = false;
-    for (unsigned int i = 0; (i < terrainPointsNr) && !isHigherPoint; i++) {
+    for (unsigned int i = 0; (i < terrainPointsNr) && (!isHigherPoint); i++) {
         float dy = abs(terrainPoints[i].y - terrainPoints[i + 1].y);
         //if (i==500) cout <<"y1=" << terrainPoints[i].y << "y2=" << terrainPoints[i+1].y << " diff= " << dy << endl;
         // check if is higher than the limit
@@ -486,14 +552,28 @@ void Tema1::RenderTanksComponents(float deltaTimeSeconds)
         // compute tanks rotation angle
         if (tank1.positionY == 0) {
             tank1.rotationAngle = 0;
-        }
-        else {
+        } else {
             tank1.rotationAngle = GetTankAngle(tank1.positionX);
         }
 
+        // tank1 health bar border
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY + TANK_SIZE*2.5f);
+        modelMatrix *= transform2D::Scale(TANK_SIZE/2, TANK_SIZE/2);
+        RenderMesh2D(meshes["health-bar-border"], shaders["VertexColor"], modelMatrix);
+
+        // tank1 health bar
+        modelMatrix = glm::mat3(1);
+        // move the health bar to the left by "consumed health/2"
+        modelMatrix *= transform2D::Translate( -(((MAX_HEALTH_POINTS - tank1.health) / MAX_HEALTH_POINTS) * 5.4 * TANK_SIZE / 2) / 2, 0);
+        // translate the health bar above the tank
+        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY + MAX_HEALTH_POINTS);
+        modelMatrix *= transform2D::Scale((TANK_SIZE/2) * (tank1.health / MAX_HEALTH_POINTS), TANK_SIZE / 2);
+        RenderMesh2D(meshes["health-bar"], shaders["VertexColor"], modelMatrix);
+
         // tank1
         modelMatrix = glm::mat3(1);
-        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3); // -3 for the tank to enter in terrain surface
+        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3); // -3 for the tank to enter the terrain surface
         modelMatrix *= transform2D::Rotate(tank1.rotationAngle);
         modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
         RenderMesh2D(meshes["tank1"], shaders["VertexColor"], modelMatrix);
@@ -520,6 +600,21 @@ void Tema1::RenderTanksComponents(float deltaTimeSeconds)
         else {
             tank2.rotationAngle = GetTankAngle(tank2.positionX);
         }
+
+        // tank2 health bar border
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY + TANK_SIZE*2.5f);
+        modelMatrix *= transform2D::Scale(TANK_SIZE / 2, TANK_SIZE / 2);
+        RenderMesh2D(meshes["health-bar-border"], shaders["VertexColor"], modelMatrix);
+
+        // tank2 health bar
+        modelMatrix = glm::mat3(1);
+        // move the health bar to the left by "consumed health/2"
+        modelMatrix *= transform2D::Translate(-(((MAX_HEALTH_POINTS - tank2.health) / MAX_HEALTH_POINTS) * 5.4 * TANK_SIZE / 2) / 2, 0);
+        // translate the health bar above the tank
+        modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY + MAX_HEALTH_POINTS);
+        modelMatrix *= transform2D::Scale((TANK_SIZE / 2) * (tank2.health / MAX_HEALTH_POINTS), TANK_SIZE / 2);
+        RenderMesh2D(meshes["health-bar"], shaders["VertexColor"], modelMatrix);
 
         // tank2
         modelMatrix = glm::mat3(1);
@@ -658,6 +753,9 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                     modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
                     RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
                 }
+            } else {
+                // the projectile is outside the terrain limits, reset the projectile
+                tank1.projectiles[i].ResetProjectile();
             }
         }
     }
@@ -676,15 +774,13 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                     cameraIsShaking = true;
                     cameraShakeDirection = 'N';
                     cout << "new health of tank1: " << tank1.health << "\n";
-                }
-                else if (projectileToGroundDiff < COLLISION_THRESHOLD) {
+                } else if (projectileToGroundDiff < COLLISION_THRESHOLD) {
                     ProjectileTerrainCollision(tank2.projectiles[i].x);
                     tank2.projectiles[i].ResetProjectile();
                     // perform camera shake
                     cameraIsShaking = true;
                     cameraShakeDirection = 'N';
-                }
-                else {
+                } else {
                     modelMatrix = glm::mat3(1);
 
                     // update projectile's attributes of movement
@@ -696,6 +792,9 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                     modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
                     RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
                 }
+            } else {
+                // the projectile is outside the terrain limits, reset the projectile
+                tank2.projectiles[i].ResetProjectile();
             }
         }
     }
