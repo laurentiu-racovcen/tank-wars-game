@@ -35,6 +35,7 @@ namespace m1
         void OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods) override;
         void OnMouseScroll(int mouseX, int mouseY, int offsetX, int offsetY) override;
         void OnWindowResize(int width, int height) override;
+        void CameraShake(float deltaTimeSeconds);
 
         void FillTerrainVector(float startX, float endX);
         void UpdateTerrain(float deltaTimeSeconds);
@@ -43,10 +44,10 @@ namespace m1
         void InitTanksProjectilesData();
         void RenderTanksComponents(float deltaTimeSeconds);
         void RenderTanksProjectiles(float deltaTimeSeconds);
-        float GetTerrainPositionY(float x);
+        float GetPositionY(float x);
         float GetTankAngle(float x);
         float GetProjectilePositionY(float y0, float initialSpeedY, float t);
-        void ProjectileCollision(float x);
+        void ProjectileTerrainCollision(float x);
 
     protected:
         glm::mat3 modelMatrix;
@@ -55,5 +56,8 @@ namespace m1
         float windowSegmentSizeX;
         Tank tank1;
         Tank tank2;
+        gfxc::Camera* camera;
+        glm::vec3 cameraPosition;
+        bool cameraIsShaking;
     };
 }   // namespace m1

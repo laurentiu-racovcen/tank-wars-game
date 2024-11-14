@@ -13,7 +13,7 @@
 #define TURRET_WIDTH         1.0f * TANK_SIZE / 7
 #define TURRET_LENGTH        TANK_SIZE * 1.35f
 #define PROJECTILE_SIZE      1.0f * TANK_SIZE / 5.5f
-#define MAX_PROJECTILES_NR   100
+#define MAX_PROJECTILES_NR   30
 
 class Tank {
 	public:
@@ -22,6 +22,7 @@ class Tank {
 		float rotationAngle;
 		float cx;
 		float turretAngle;
+		float health;
 		glm::vec2 turretPosition;
 		Projectile projectiles[MAX_PROJECTILES_NR];
 };

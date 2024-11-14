@@ -2,6 +2,7 @@
 
 #define GRAVITATIONAL_FORCE			 30.0f
 #define PROJECTILE_INITIAL_SPEED	 150.0f
+#define PROJECTILE_DAMAGE			 20.0f
 
 class Projectile {
 	public:
