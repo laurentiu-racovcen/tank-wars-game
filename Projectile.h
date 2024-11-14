@@ -15,14 +15,5 @@ class Projectile {
 		float y;              // current Y coordinate
 		bool isIdle;          // true if the projectile has not been launched     
 	public:
-		void ResetProjectile() {
-            isIdle = true;
-            x0 = 0;
-			y0 = 0;
-			time = 0;
-			x = 0;
-			y = 0;
-			initialSpeedX = 0;
-			initialSpeedX = 0;
-		}
+		void ResetProjectile();
 };

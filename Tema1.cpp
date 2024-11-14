@@ -48,6 +48,7 @@ void Tema1::Init()
     camera->SetPosition(glm::vec3(0, 0, 50));
     cameraPosition = glm::vec3(0, 0, 50);
     cameraIsShaking = false;
+    cameraShakeDirection = 'N';
     camera->SetRotation(glm::vec3(0, 0, 0));
     camera->Update();
     GetCameraInput()->SetActive(false);
@@ -553,8 +554,8 @@ void Tema1::ProjectileTerrainCollision(float x) {
     int collisionIndex = x / windowSegmentSizeX;
 
     if ((collisionIndex >= 0) && (collisionIndex <= terrainPointsNr)) {
-        cout << "col idx = " << collisionIndex << "\n";
-        cout << "start i = " << collisionIndex - collisionPointsNr / 2 << "\n";
+        //cout << "col idx = " << collisionIndex << "\n";
+        //cout << "start i = " << collisionIndex - collisionPointsNr / 2 << "\n";
         // if the radius is outside the smaller limit, make changes starting with terrainPoints[0]
         for (size_t i = std::max(0, collisionIndex - collisionPointsNr / 2); i <= collisionIndex + collisionPointsNr / 2; i++) {
             float dx = abs(terrainPoints[collisionIndex].x - terrainPoints[i].x);
@@ -582,13 +583,36 @@ bool inTanksArea(float projectileX, float tankX) {
 }
 
 void Tema1::CameraShake(float deltaTimeSeconds) {
-    float newX = cameraPosition.x + 100*deltaTimeSeconds;
-    float newY = cameraPosition.y + 100*deltaTimeSeconds;
-    glm::vec3 newCameraPosition = glm::vec3(newX, newY, cameraPosition.z);
-
-    camera->SetPosition(newCameraPosition);
-    cameraPosition = newCameraPosition;
-    cout << "shake done!";
+    if ((cameraShakeDirection == 'N')) {
+        if ((cameraPosition.y < 18)) {
+            // go to north
+            float newX = cameraPosition.x;
+            float newY = cameraPosition.y + 3;
+            glm::vec3 newCameraPosition = glm::vec3(newX, newY, cameraPosition.z);
+            camera->SetPosition(newCameraPosition);
+            cameraPosition = newCameraPosition;
+        } else {
+            // change camera direction to south
+            cameraShakeDirection = 'S';
+        }
+    } else if ((cameraShakeDirection == 'S')) {
+        if ((cameraPosition.y >= 0)) {
+            // go to south
+            float newX = cameraPosition.x;
+            float newY = cameraPosition.y - 3;
+            glm::vec3 newCameraPosition = glm::vec3(newX, newY, cameraPosition.z);
+            camera->SetPosition(newCameraPosition);
+            cameraPosition = newCameraPosition;
+        }
+        else {
+            // change camera direction to south
+            cameraShakeDirection = 0;
+        }
+    } else {
+        // the camera becomes static
+        cameraIsShaking = false;
+        //cout << "shake done!";
+    }
     //camera->MoveRight(200*deltaTimeSeconds);
 }
 
@@ -608,16 +632,20 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
             if ((tank1.projectiles[i].x >= 0) && (tank1.projectiles[i].x <= windowSegmentSizeX * terrainPointsNr)) {
                 // the projectile has been launched
                 float projectileToGroundDiff = tank1.projectiles[i].y - GetPositionY(tank1.projectiles[i].x);
-                cout << projectileToGroundDiff << "\n";
-
                 if ((projectileToGroundDiff < COLLISION_THRESHOLD) && inTanksArea(tank1.projectiles[i].x, tank2.positionX)) {
                     ProjectileTankCollision(tank2);
-                    cameraIsShaking = true;
+                    // reset projectile
                     tank1.projectiles[i].ResetProjectile();
+                    // perform camera shake
+                    cameraIsShaking = true;
+                    cameraShakeDirection = 'N';
                     cout << "new health of tank2: " << tank2.health << "\n";
                 } else if (projectileToGroundDiff < COLLISION_THRESHOLD) {
                     ProjectileTerrainCollision(tank1.projectiles[i].x);
                     tank1.projectiles[i].ResetProjectile();
+                    // perform camera shake
+                    cameraIsShaking = true;
+                    cameraShakeDirection = 'N';
                 } else {
                     modelMatrix = glm::mat3(1);
 
@@ -625,11 +653,6 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                     tank1.projectiles[i].time += 5 * deltaTimeSeconds;
                     tank1.projectiles[i].x = tank1.projectiles[i].x0 + tank1.projectiles[i].time * tank1.projectiles[i].initialSpeedX;
                     tank1.projectiles[i].y = GetProjectilePositionY(tank1.projectiles[i].y0, tank1.projectiles[i].initialSpeedY, tank1.projectiles[i].time);
-
-                    //cout << "projectile " << i << "time = " << tank1.projectiles[i].time << "\n";
-                    //cout << "pos x = " << tank1.projectiles[i].x << "pos y = " << tank1.projectiles[i].y << "\n";
-                    //cout << "tank angle = " << tank1.rotationAngle << "turret angle = " << tank1.turretAngle << "\n";
-                    //cout << "i_speed x = " << tank1.projectiles[i].initialSpeedX << "i_speed y = " << tank1.projectiles[i].initialSpeedY << "\n";
 
                     modelMatrix *= transform2D::Translate(tank1.projectiles[i].x, tank1.projectiles[i].y);
                     modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
@@ -639,34 +662,35 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
         }
     }
     
-
     // position of the tank2 projectiles
     for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
         if (!tank2.projectiles[i].isIdle) {
             if ((tank2.projectiles[i].x >= 0) && (tank2.projectiles[i].x <= windowSegmentSizeX * terrainPointsNr)) {
                 // the projectile has been launched
                 float projectileToGroundDiff = tank2.projectiles[i].y - GetPositionY(tank2.projectiles[i].x);
-                cout << projectileToGroundDiff << "\n";
-
                 if ((projectileToGroundDiff < COLLISION_THRESHOLD) && inTanksArea(tank2.projectiles[i].x, tank1.positionX)) {
                     ProjectileTankCollision(tank1);
+                    // reset projectile
                     tank2.projectiles[i].ResetProjectile();
+                    // perform camera shake
+                    cameraIsShaking = true;
+                    cameraShakeDirection = 'N';
                     cout << "new health of tank1: " << tank1.health << "\n";
-                } else if (projectileToGroundDiff < COLLISION_THRESHOLD) {
+                }
+                else if (projectileToGroundDiff < COLLISION_THRESHOLD) {
                     ProjectileTerrainCollision(tank2.projectiles[i].x);
                     tank2.projectiles[i].ResetProjectile();
-                } else {
+                    // perform camera shake
+                    cameraIsShaking = true;
+                    cameraShakeDirection = 'N';
+                }
+                else {
                     modelMatrix = glm::mat3(1);
 
                     // update projectile's attributes of movement
                     tank2.projectiles[i].time += 5 * deltaTimeSeconds;
                     tank2.projectiles[i].x = tank2.projectiles[i].x0 + tank2.projectiles[i].time * tank2.projectiles[i].initialSpeedX;
                     tank2.projectiles[i].y = GetProjectilePositionY(tank2.projectiles[i].y0, tank2.projectiles[i].initialSpeedY, tank2.projectiles[i].time);
-
-                    //cout << "projectile " << i << "time = " << tank1.projectiles[i].time << "\n";
-                    //cout << "pos x = " << tank1.projectiles[i].x << "pos y = " << tank1.projectiles[i].y << "\n";
-                    //cout << "tank angle = " << tank1.rotationAngle << "turret angle = " << tank1.turretAngle << "\n";
-                    //cout << "i_speed x = " << tank1.projectiles[i].initialSpeedX << "i_speed y = " << tank1.projectiles[i].initialSpeedY << "\n";
 
                     modelMatrix *= transform2D::Translate(tank2.projectiles[i].x, tank2.projectiles[i].y);
                     modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);

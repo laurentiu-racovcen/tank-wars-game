@@ -59,5 +59,6 @@ namespace m1
         gfxc::Camera* camera;
         glm::vec3 cameraPosition;
         bool cameraIsShaking;
+        char cameraShakeDirection;
     };
 }   // namespace m1
