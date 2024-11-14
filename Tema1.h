@@ -37,14 +37,16 @@ namespace m1
         void OnWindowResize(int width, int height) override;
 
         void FillTerrainVector(float startX, float endX);
-        void GenerateTerrain(float deltaTimeSeconds);
+        void UpdateTerrain(float deltaTimeSeconds);
+        void GenerateTerrain();
         float TerrainFunction(float x);
         void InitTanksProjectilesData();
-        void RenderTanks(float deltaTimeSeconds);
+        void RenderTanksComponents(float deltaTimeSeconds);
         void RenderTanksProjectiles(float deltaTimeSeconds);
-        float GetTankPositionY(float x);
+        float GetTerrainPositionY(float x);
         float GetTankAngle(float x);
         float GetProjectilePositionY(float y0, float initialSpeedY, float t);
+        void ProjectileCollision(float x);
 
     protected:
         glm::mat3 modelMatrix;

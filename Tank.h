@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Projectile.h"
+#include "components/simple_scene.h"
 
 #define TANK1_COLOR          0.5, 0.3, 0.2
 #define TANK2_COLOR          0.5, 0.4, 0.6
@@ -11,7 +12,7 @@
 #define TANK2_INITIAL_X_POS  1800
 #define TURRET_WIDTH         1.0f * TANK_SIZE / 7
 #define TURRET_LENGTH        TANK_SIZE * 1.35f
-#define PROJECTILE_SIZE      1.0f * TANK_SIZE / 7
+#define PROJECTILE_SIZE      1.0f * TANK_SIZE / 5.5f
 #define MAX_PROJECTILES_NR   100
 
 class Tank {
@@ -21,5 +22,6 @@ class Tank {
 		float rotationAngle;
 		float cx;
 		float turretAngle;
+		glm::vec2 turretPosition;
 		Projectile projectiles[MAX_PROJECTILES_NR];
 };
