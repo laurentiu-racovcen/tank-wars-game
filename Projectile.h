@@ -4,6 +4,8 @@
 #define PROJECTILE_INITIAL_SPEED	 150.0f
 #define PROJECTILE_DAMAGE			 10.0f
 #define PROJECTILE_COLOR			 0.2, 0.2, 0.2
+#define TRAJECTORY_POINTS_NR		 300
+#define TRAJECTORY_COLOR			 1, 1, 1
 
 class Projectile {
 	public:

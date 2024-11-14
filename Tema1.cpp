@@ -24,7 +24,8 @@
 
 // thresholds
 #define SLIDING_THRESHOLD 1.2f
-#define COLLISION_THRESHOLD 2.0f
+#define TERRAIN_COLLISION_THRESHOLD 2.0f
+#define TANK_COLLISION_THRESHOLD TANK_SIZE
 
 #define EXPLOSION_RADIUS 80.0f
 
@@ -110,6 +111,8 @@ void Tema1::Init()
     // add and init tank projectile mesh
     AddTankProjectileMesh();
     InitTanksProjectilesData();
+
+    AddProjectileTrajectoryMesh();
 }
 
 float Tema1::TerrainFunction(float x)
@@ -371,6 +374,38 @@ void Tema1::AddTankProjectileMesh()
     CreateMesh("projectile", vertices, indices);
 }
 
+void Tema1::AddProjectileTrajectoryMesh()
+{
+    unsigned int k = 25;
+    vector<VertexFormat> vertices;
+    vector<unsigned int> indices;
+    // initialize the first vertex (x,y) = (1,0) in the vertices vector
+
+    // add origin of (x,y) = (0, 0)
+    vertices.push_back(VertexFormat(glm::vec3(0, 0, 0), glm::vec3(TRAJECTORY_COLOR)));
+
+    // insert all the vertices of the disk
+    for (unsigned int i = 1; i <= k; i++) {
+        vertices.push_back(VertexFormat(glm::vec3(cos(((float)i / k) * 2 * 3.14f), sin(((float)i / k) * 2 * 3.14f), 0),
+            glm::vec3(TRAJECTORY_COLOR)));
+    }
+
+    // insert all the indices of the disk
+    for (unsigned int i = 2; i <= k; i++) {
+        indices.push_back(i);
+        indices.push_back(0);
+        indices.push_back(i - 1);
+    }
+
+    // add last triangle indices of the disk
+    indices.push_back(1);
+    indices.push_back(0);
+    indices.push_back(k);
+
+    // Actually create the mesh from the data
+    CreateMesh("projectile-trajectory", vertices, indices);
+}
+
 void Tema1::AddHealthBarBorderMesh()
 {
     vector<VertexFormat> vertices
@@ -432,6 +467,73 @@ void Tema1::AddHealthBarMesh()
 
     // Create the mesh from the data
     CreateMesh("health-bar", vertices, indices);
+}
+
+void Tema1::DrawProjectileTrajectories()
+{
+    /* Draw trajectory for tank1 projectile */
+
+    if (tank1.health > 0) {
+
+        Projectile projectile = Projectile();
+        vector<VertexFormat> vertices;
+        vector<unsigned int> indices;
+
+        // initialize projectile parameters
+        projectile.x0 = tank1.turretPosition.x + TURRET_LENGTH * cos(tank1.turretAngle + M_PI_2);
+        projectile.y0 = tank1.turretPosition.y + TURRET_LENGTH * sin(tank1.turretAngle + M_PI_2);
+        projectile.x = projectile.x0;
+        projectile.y = projectile.y0;
+        projectile.initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank1.turretAngle + M_PI_2);
+        projectile.initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank1.turretAngle + M_PI_2);
+
+        for (size_t time = 0; time < TRAJECTORY_POINTS_NR; time++) {
+            // update projectile's attributes of movement
+            projectile.x = projectile.x0 + 0.5f * time * projectile.initialSpeedX;
+            projectile.y = GetProjectilePositionY(projectile.y0, projectile.initialSpeedY, 0.5f * time);
+
+            //cout << "pushing: sinus = " << sin(tank1.turretAngle + M_PI_2) << "cos = " << cos(tank1.turretAngle + M_PI_2) << ", x=" << projectile.x << ", y=" << projectile.y << "\n";
+
+            vertices.push_back(VertexFormat(glm::vec3(projectile.x, projectile.y, 0), glm::vec3(TRAJECTORY_COLOR)));
+            indices.push_back(time);
+
+            modelMatrix = glm::mat3(1);
+            modelMatrix *= transform2D::Translate(projectile.x, projectile.y);
+            modelMatrix *= transform2D::Scale(PROJECTILE_SIZE / 2, PROJECTILE_SIZE / 2);
+            RenderMesh2D(meshes["projectile-trajectory"], shaders["VertexColor"], modelMatrix);
+        }
+    }
+
+    /* Draw trajectory for tank2 projectile */
+    if (tank2.health > 0) {
+        Projectile projectile = Projectile();
+        vector<VertexFormat> vertices;
+        vector<unsigned int> indices;
+
+        // initialize projectile parameters
+        projectile.x0 = tank2.turretPosition.x + TURRET_LENGTH * cos(tank2.turretAngle + M_PI_2);
+        projectile.y0 = tank2.turretPosition.y + TURRET_LENGTH * sin(tank2.turretAngle + M_PI_2);
+        projectile.x = projectile.x0;
+        projectile.y = projectile.y0;
+        projectile.initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank2.turretAngle + M_PI_2);
+        projectile.initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank2.turretAngle + M_PI_2);
+
+        for (size_t time = 0; time < TRAJECTORY_POINTS_NR; time++) {
+            // update projectile's attributes of movement
+            projectile.x = projectile.x0 + 0.5f * time * projectile.initialSpeedX;
+            projectile.y = GetProjectilePositionY(projectile.y0, projectile.initialSpeedY, 0.5f * time);
+
+            //cout << "pushing: sinus = " << sin(tank1.turretAngle + M_PI_2) << "cos = " << cos(tank1.turretAngle + M_PI_2) << ", x=" << projectile.x << ", y=" << projectile.y << "\n";
+
+            vertices.push_back(VertexFormat(glm::vec3(projectile.x, projectile.y, 0), glm::vec3(TRAJECTORY_COLOR)));
+            indices.push_back(time);
+
+            modelMatrix = glm::mat3(1);
+            modelMatrix *= transform2D::Translate(projectile.x, projectile.y);
+            modelMatrix *= transform2D::Scale(PROJECTILE_SIZE / 2, PROJECTILE_SIZE / 2);
+            RenderMesh2D(meshes["projectile-trajectory"], shaders["VertexColor"], modelMatrix);
+        }
+    }
 }
 
 void Tema1::FrameStart()
@@ -727,7 +829,7 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
             if ((tank1.projectiles[i].x >= 0) && (tank1.projectiles[i].x <= windowSegmentSizeX * terrainPointsNr)) {
                 // the projectile has been launched
                 float projectileToGroundDiff = tank1.projectiles[i].y - GetPositionY(tank1.projectiles[i].x);
-                if ((projectileToGroundDiff < COLLISION_THRESHOLD) && inTanksArea(tank1.projectiles[i].x, tank2.positionX)) {
+                if ((projectileToGroundDiff < TANK_COLLISION_THRESHOLD) && inTanksArea(tank1.projectiles[i].x, tank2.positionX)) {
                     ProjectileTankCollision(tank2);
                     // reset projectile
                     tank1.projectiles[i].ResetProjectile();
@@ -735,7 +837,7 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                     cameraIsShaking = true;
                     cameraShakeDirection = 'N';
                     cout << "new health of tank2: " << tank2.health << "\n";
-                } else if (projectileToGroundDiff < COLLISION_THRESHOLD) {
+                } else if (projectileToGroundDiff < TERRAIN_COLLISION_THRESHOLD) {
                     ProjectileTerrainCollision(tank1.projectiles[i].x);
                     tank1.projectiles[i].ResetProjectile();
                     // perform camera shake
@@ -766,7 +868,7 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
             if ((tank2.projectiles[i].x >= 0) && (tank2.projectiles[i].x <= windowSegmentSizeX * terrainPointsNr)) {
                 // the projectile has been launched
                 float projectileToGroundDiff = tank2.projectiles[i].y - GetPositionY(tank2.projectiles[i].x);
-                if ((projectileToGroundDiff < COLLISION_THRESHOLD) && inTanksArea(tank2.projectiles[i].x, tank1.positionX)) {
+                if ((projectileToGroundDiff < TANK_COLLISION_THRESHOLD) && inTanksArea(tank2.projectiles[i].x, tank1.positionX)) {
                     ProjectileTankCollision(tank1);
                     // reset projectile
                     tank2.projectiles[i].ResetProjectile();
@@ -774,7 +876,7 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                     cameraIsShaking = true;
                     cameraShakeDirection = 'N';
                     cout << "new health of tank1: " << tank1.health << "\n";
-                } else if (projectileToGroundDiff < COLLISION_THRESHOLD) {
+                } else if (projectileToGroundDiff < TERRAIN_COLLISION_THRESHOLD) {
                     ProjectileTerrainCollision(tank2.projectiles[i].x);
                     tank2.projectiles[i].ResetProjectile();
                     // perform camera shake
@@ -805,6 +907,7 @@ void Tema1::Update(float deltaTimeSeconds)
     UpdateTerrain(deltaTimeSeconds);
     GenerateTerrain();
     RenderTanksComponents(deltaTimeSeconds);
+    DrawProjectileTrajectories();
 }
 
 void Tema1::FrameEnd()
