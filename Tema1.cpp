@@ -25,7 +25,7 @@
 // thresholds
 #define SLIDING_THRESHOLD 1.2f
 #define TERRAIN_COLLISION_THRESHOLD 2.0f
-#define TANK_COLLISION_THRESHOLD TANK_SIZE
+#define TANK_COLLISION_THRESHOLD TANK_SIZE/2
 
 #define EXPLOSION_RADIUS 80.0f
 
@@ -453,10 +453,10 @@ void Tema1::OnInputUpdate(float deltaTime, int mods)
             tanks[0].positionX += deltaTime * TANK_SPEED;
         }
 
-        if (window->KeyHold(GLFW_KEY_W) == true) {
+        if ((window->KeyHold(GLFW_KEY_W) == true) && tanks[0].turretAngle < M_PI_2 * 0.8f) {
             tanks[0].turretAngle += 2 * deltaTime;
         }
-        else if (window->KeyHold(GLFW_KEY_S) == true) {
+        else if ((window->KeyHold(GLFW_KEY_S) == true) && tanks[0].turretAngle > -M_PI_2 * 0.8f) {
             tanks[0].turretAngle -= 2 * deltaTime;
         }
     }
@@ -469,10 +469,10 @@ void Tema1::OnInputUpdate(float deltaTime, int mods)
             tanks[1].positionX += deltaTime * TANK_SPEED;
         }
 
-        if (window->KeyHold(GLFW_KEY_UP) == true) {
+        if ((window->KeyHold(GLFW_KEY_UP) == true) && tanks[1].turretAngle > -M_PI_2*0.8f) {
             tanks[1].turretAngle -= 2 * deltaTime;
         }
-        else if (window->KeyHold(GLFW_KEY_DOWN) == true) {
+        else if ((window->KeyHold(GLFW_KEY_DOWN) == true) && tanks[1].turretAngle < M_PI_2*0.8f) {
             tanks[1].turretAngle += 2 * deltaTime;
         }
     }
