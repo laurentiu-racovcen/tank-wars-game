@@ -65,5 +65,6 @@ namespace m1
         glm::vec3 cameraPosition;
         bool cameraIsShaking;
         char cameraShakeDirection;
+        bool gameStarted;
     };
 }   // namespace m1

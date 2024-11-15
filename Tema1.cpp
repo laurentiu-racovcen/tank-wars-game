@@ -432,6 +432,9 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
 
 void Tema1::Update(float deltaTimeSeconds)
 {
+    if (!gameStarted) {
+        // render the menu
+    }
     UpdateTerrain(deltaTimeSeconds);
     GenerateTerrain();
     RenderTanksComponents(deltaTimeSeconds);
