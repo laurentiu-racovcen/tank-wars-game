@@ -5,6 +5,7 @@
 
 // for 1920x1080 resolution is enough
 #define MAX_TERRAIN_POINTS_NR 2000
+#define MAX_TANKS_NR 4
 
 namespace m1
 {
@@ -18,8 +19,7 @@ namespace m1
 
     private:
         void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
-        void AddTank1Mesh();
-        void AddTank2Mesh();
+        void AddTankMesh(unsigned int index, glm::vec3 color);
         void AddTankTurretMesh();
         void AddTankProjectileMesh();
         void AddProjectileTrajectoryMesh();
@@ -52,14 +52,15 @@ namespace m1
         float GetTankAngle(float x);
         float GetProjectilePositionY(float y0, float initialSpeedY, float t);
         void ProjectileTerrainCollision(float x);
+        bool IsAnyTankNearProjectile(float x);
 
     protected:
         glm::mat3 modelMatrix;
         glm::vec2 terrainPoints[MAX_TERRAIN_POINTS_NR];
         unsigned int terrainPointsNr;
         float windowSegmentSizeX;
-        Tank tank1;
-        Tank tank2;
+        unsigned int tanksNumber;
+        Tank tanks[MAX_TANKS_NR];
         gfxc::Camera* camera;
         glm::vec3 cameraPosition;
         bool cameraIsShaking;

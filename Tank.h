@@ -3,8 +3,8 @@
 #include "Projectile.h"
 #include "components/simple_scene.h"
 
-#define TANK1_COLOR          0.5, 0.3, 0.2
-#define TANK2_COLOR          0.5, 0.4, 0.6
+#define TANK0_COLOR          0.5, 0.3, 0.2
+#define TANK1_COLOR          0.5, 0.4, 0.6
 #define TURRET_COLOR         0.2, 0.2, 0.2
 #define HEALTH_BAR_COLOR     1, 1, 1
 #define TANK_SIZE            40
@@ -27,4 +27,7 @@ class Tank {
 		float health;
 		glm::vec2 turretPosition;
 		Projectile projectiles[MAX_PROJECTILES_NR];
+	public:
+		bool isNearProjectile(float projectileX);
+		void collidesWithProjectile();
 };

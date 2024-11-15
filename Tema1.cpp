@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "lab_m1/Tema1/transform2D.h"
-#include "lab_m1/Tema1/object2D.h"
+#include "lab_m1/Tema1/Object2D.h"
 
 // environment colors
 #define SKY_COLOR         0.5705, 0.688, 0.7529
@@ -36,7 +36,6 @@ Tema1::Tema1()
 {
 }
 
-
 Tema1::~Tema1()
 {
 }
@@ -54,6 +53,7 @@ void Tema1::Init()
     camera->Update();
     GetCameraInput()->SetActive(false);
 
+    // add square mesh for terrain generation
     glm::vec3 corner = glm::vec3(0, 0, 0);
     float squareSide = 1;
 
@@ -68,38 +68,40 @@ void Tema1::Init()
     // initialize terrain points number
     terrainPointsNr = 0;
 
-    // initialize window segment size on OX-axis
+    // initialize window segment size on X-axis
     windowSegmentSizeX = 2;
 
     // Fill the terrain points vector
     FillTerrainVector(FUNCTION_START_X, FUNCTION_END_X);
 
+    // initialize tanks number
+    tanksNumber = 2;
+
     // initialize tanks position
-    tank1.positionX = TANK1_INITIAL_X_POS;
-    tank1.positionY = GetPositionY(tank1.positionX);
+    tanks[0].positionX = TANK1_INITIAL_X_POS;
+    tanks[1].positionX = TANK2_INITIAL_X_POS;
 
-    tank2.positionX = TANK2_INITIAL_X_POS;
-    tank2.positionY = GetPositionY(tank2.positionX);
+    for (size_t i = 0; i < tanksNumber; i++) {
+        // initialize tank's Y position
+        tanks[i].positionY = GetPositionY(tanks[i].positionX);
 
-    // center of the tanks bottom side
-    tank1.cx = 50;
-    tank2.cx = 50;
+        // center of the tank's bottom side
+        tanks[i].cx = 50;
+        
+        // initialize turret angle to point upwards
+        tanks[i].turretAngle = 0;
 
-    // initialize turret angle to point upwards
-    tank1.turretAngle = 0;
-    tank2.turretAngle = 0;
+        // initialize turret's position
+        tanks[i].turretPosition = glm::vec2(tanks[i].positionX, tanks[i].positionY);
 
-    // initialize turrets position
-    tank1.turretPosition = glm::vec2(tank1.positionX, tank1.positionY);
-    tank2.turretPosition = glm::vec2(tank2.positionX, tank2.positionY);
+        // initialize tanks' health
+        tanks[i].health = 100;
 
-    // initialize tanks' health
-    tank1.health = 100;
-    tank2.health = 100;
+    }
 
     // add tanks' meshes
-    AddTank1Mesh();
-    AddTank2Mesh();
+    AddTankMesh(0, glm::vec3 (TANK0_COLOR));
+    AddTankMesh(1, glm::vec3 (TANK1_COLOR));
 
     // add tank turret mesh
     AddTankTurretMesh();
@@ -135,403 +137,9 @@ void Tema1::FillTerrainVector(float startX, float endX)
 
 void Tema1::InitTanksProjectilesData()
 {
-    for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
-        tank1.projectiles[i].ResetProjectile();
-        tank2.projectiles[i].ResetProjectile();
-    }
-}
-
-void Tema1::CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices)
-{
-    unsigned int VAO = 0;
-    // Create and bind the VAO
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-    unsigned int VBO = 0;
-    // Create and bind the VBO
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    // Send vertices data into the VBO buffer
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0]) * vertices.size(), &vertices[0], GL_STATIC_DRAW);
-
-    unsigned int IBO = 0;
-    // Create and bind the IBO
-    glGenBuffers(1, &IBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-
-    // Send indices data into the IBO buffer
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), &indices[0], GL_STATIC_DRAW);
-
-    // Set vertex position attribute
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), 0);
-
-    // Set vertex normal attribute
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(sizeof(glm::vec3)));
-
-    // Set texture coordinate attribute
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(2 * sizeof(glm::vec3)));
-
-    // Set vertex color attribute
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(VertexFormat), (void*)(2 * sizeof(glm::vec3) + sizeof(glm::vec2)));
-
-    // Unbind the VAO
-    glBindVertexArray(0);
-
-    // Check for OpenGL errors
-    if (GetOpenGLError() == GL_INVALID_OPERATION)
-    {
-        cout << "\tOpenGL error." << std::endl;
-    }
-
-    // Mesh information is saved into a Mesh object
-    meshes[name] = new Mesh(name);
-    meshes[name]->InitFromBuffer(VAO, static_cast<unsigned int>(indices.size()));
-}
-
-void Tema1::AddTank1Mesh() {
-    // generate disk surface using k triangles with the tank
-    unsigned int k = 20;
-    vector<VertexFormat> vertices;
-    vector<unsigned int> indices;
-
-    // add origin of (x,y) = (0, 0.8)
-    vertices.push_back(VertexFormat(glm::vec3(0, 0.8f, 0), glm::vec3(TANK1_COLOR)));
-
-    float disk_radius = 0.6f;
-    // insert all the vertices of the disk
-    for (unsigned int i = 1; i <= k; i++) {
-        vertices.push_back(VertexFormat(glm::vec3(disk_radius * cos(((float)i / k) * 2 * 3.14f), disk_radius * sin(((float)i / k) * 2 * 3.14f) + 0.8f, 0),
-            glm::vec3(TANK1_COLOR)));
-    }
-
-    // insert all the indices of the disk
-    for (unsigned int i = 2; i <= k; i++) {
-        indices.push_back(i);
-        indices.push_back(0);
-        indices.push_back(i - 1);
-    }
-
-    // add last triangle indices of the disk
-    indices.push_back(1);
-    indices.push_back(0);
-    indices.push_back(k);
-
-    // Middle and bottom part
-    // Define tank vertices
-    vector<VertexFormat> mid_bottom_tank_vertices
-    {
-        // Bottom part (slightly darker than the upper part)
-        VertexFormat(glm::vec3(-1, 0, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),       // Bottom-left    21
-        VertexFormat(glm::vec3(1, 0, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),        // Bottom-right   22
-        VertexFormat(glm::vec3(1.2f, 0.2, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),   // Top-right      23
-        VertexFormat(glm::vec3(-1.2f, 0.2, 0), glm::vec3(TANK1_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),  // Top-left       24
-
-        // Upper part
-        VertexFormat(glm::vec3(-1.4f, 0.2f, 0), glm::vec3(TANK1_COLOR)), // Bottom-left    25
-        VertexFormat(glm::vec3(1.4f, 0.2f, 0), glm::vec3(TANK1_COLOR)),  // Bottom-right   26
-        VertexFormat(glm::vec3(1.2f, 0.8, 0), glm::vec3(TANK1_COLOR)),   // Top-right      27
-        VertexFormat(glm::vec3(-1.2f, 0.8, 0), glm::vec3(TANK1_COLOR)),  // Top-left       28
-    };
-
-    vector<unsigned int> mid_bottom_tank_indices =
-    {
-        // bottom part
-        21, 22, 23,
-        21, 23, 24,
-
-        // upper part
-        25, 26, 27,
-        25, 27, 28
-    };
-
-    // insert middle and bottom tank vertices and indices
-    vertices.insert(vertices.end(), mid_bottom_tank_vertices.begin(), mid_bottom_tank_vertices.end());
-    indices.insert(indices.end(), mid_bottom_tank_indices.begin(), mid_bottom_tank_indices.end());
-
-    // Actually create the mesh from the data
-    CreateMesh("tank1", vertices, indices);
-}
-
-void Tema1::AddTank2Mesh() {
-    // generate disk surface using k triangles with the tank
-    unsigned int k = 20;
-    vector<VertexFormat> vertices;
-    vector<unsigned int> indices;
-
-    // add origin of (x,y) = (0, 0.8)
-    vertices.push_back(VertexFormat(glm::vec3(0, 0.8f, 0), glm::vec3(TANK2_COLOR)));
-
-    float disk_radius = 0.6f;
-    // insert all the vertices of the disk
-    for (unsigned int i = 1; i <= k; i++) {
-        vertices.push_back(VertexFormat(glm::vec3(disk_radius * cos(((float)i / k) * 2 * 3.14f), disk_radius * sin(((float)i / k) * 2 * 3.14f) + 0.8f, 0),
-            glm::vec3(TANK2_COLOR)));
-    }
-
-    // insert all the indices of the disk
-    for (unsigned int i = 2; i <= k; i++) {
-        indices.push_back(i);
-        indices.push_back(0);
-        indices.push_back(i - 1);
-    }
-
-    // add last triangle indices of the disk
-    indices.push_back(1);
-    indices.push_back(0);
-    indices.push_back(k);
-
-    // Middle and bottom part
-    // Define tank vertices
-    vector<VertexFormat> mid_bottom_tank_vertices
-    {
-        // Bottom part (slightly darker than the upper part)
-        VertexFormat(glm::vec3(-1, 0, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),       // Bottom-left    21
-        VertexFormat(glm::vec3(1, 0, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),        // Bottom-right   22
-        VertexFormat(glm::vec3(1.2f, 0.2, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),   // Top-right      23
-        VertexFormat(glm::vec3(-1.2f, 0.2, 0), glm::vec3(TANK2_COLOR) - glm::vec3(0.1f, 0.1f, 0.1f)),  // Top-left       24
-
-        // Upper part
-        VertexFormat(glm::vec3(-1.4f, 0.2f, 0), glm::vec3(TANK2_COLOR)), // Bottom-left    25
-        VertexFormat(glm::vec3(1.4f, 0.2f, 0), glm::vec3(TANK2_COLOR)),  // Bottom-right   26
-        VertexFormat(glm::vec3(1.2f, 0.8, 0), glm::vec3(TANK2_COLOR)),   // Top-right      27
-        VertexFormat(glm::vec3(-1.2f, 0.8, 0), glm::vec3(TANK2_COLOR)),  // Top-left       28
-    };
-
-    vector<unsigned int> mid_bottom_tank_indices =
-    {
-        // bottom part
-        21, 22, 23,
-        21, 23, 24,
-
-        // upper part
-        25, 26, 27,
-        25, 27, 28
-    };
-
-    // insert middle and bottom tank vertices and indices
-    vertices.insert(vertices.end(), mid_bottom_tank_vertices.begin(), mid_bottom_tank_vertices.end());
-    indices.insert(indices.end(), mid_bottom_tank_indices.begin(), mid_bottom_tank_indices.end());
-
-    // Actually create the mesh from the data
-    CreateMesh("tank2", vertices, indices);
-}
-
-void Tema1::AddTankTurretMesh()
-{
-    vector<VertexFormat> vertices
-    {
-        VertexFormat(glm::vec3(-0.5, 0, 0), glm::vec3(TURRET_COLOR)),  // Bottom-left    0
-        VertexFormat(glm::vec3(0.5, 0, 0), glm::vec3(TURRET_COLOR)),   // Bottom-right   1
-        VertexFormat(glm::vec3(0.5, 1, 0), glm::vec3(TURRET_COLOR)),   // Top-right      2
-        VertexFormat(glm::vec3(-0.5, 1, 0), glm::vec3(TURRET_COLOR))   // Top-left       3
-    };
-
-    vector<unsigned int> indices
-    {
-        0, 1, 2,
-        0, 2, 3
-    };
-
-    // Create the mesh from the data
-    CreateMesh("tank-turret", vertices, indices);
-}
-
-void Tema1::AddTankProjectileMesh()
-{
-    unsigned int k = 25;
-    vector<VertexFormat> vertices;
-    vector<unsigned int> indices;
-    // initialize the first vertex (x,y) = (1,0) in the vertices vector
-
-    // add origin of (x,y) = (0, 0)
-    vertices.push_back(VertexFormat(glm::vec3(0, 0, 0), glm::vec3(PROJECTILE_COLOR)));
-
-    // insert all the vertices of the disk
-    for (unsigned int i = 1; i <= k; i++) {
-        vertices.push_back(VertexFormat(glm::vec3(cos(((float)i / k) * 2 * 3.14f), sin(((float)i / k) * 2 * 3.14f), 0),
-            glm::vec3(PROJECTILE_COLOR)));
-    }
-
-    // insert all the indices of the disk
-    for (unsigned int i = 2; i <= k; i++) {
-        indices.push_back(i);
-        indices.push_back(0);
-        indices.push_back(i - 1);
-    }
-
-    // add last triangle indices of the disk
-    indices.push_back(1);
-    indices.push_back(0);
-    indices.push_back(k);
-
-    // Actually create the mesh from the data
-    CreateMesh("projectile", vertices, indices);
-}
-
-void Tema1::AddProjectileTrajectoryMesh()
-{
-    unsigned int k = 25;
-    vector<VertexFormat> vertices;
-    vector<unsigned int> indices;
-    // initialize the first vertex (x,y) = (1,0) in the vertices vector
-
-    // add origin of (x,y) = (0, 0)
-    vertices.push_back(VertexFormat(glm::vec3(0, 0, 0), glm::vec3(TRAJECTORY_COLOR)));
-
-    // insert all the vertices of the disk
-    for (unsigned int i = 1; i <= k; i++) {
-        vertices.push_back(VertexFormat(glm::vec3(cos(((float)i / k) * 2 * 3.14f), sin(((float)i / k) * 2 * 3.14f), 0),
-            glm::vec3(TRAJECTORY_COLOR)));
-    }
-
-    // insert all the indices of the disk
-    for (unsigned int i = 2; i <= k; i++) {
-        indices.push_back(i);
-        indices.push_back(0);
-        indices.push_back(i - 1);
-    }
-
-    // add last triangle indices of the disk
-    indices.push_back(1);
-    indices.push_back(0);
-    indices.push_back(k);
-
-    // Actually create the mesh from the data
-    CreateMesh("projectile-trajectory", vertices, indices);
-}
-
-void Tema1::AddHealthBarBorderMesh()
-{
-    vector<VertexFormat> vertices
-    {
-        VertexFormat(glm::vec3(-2.8f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),     // outside-Bottom-left    0
-        VertexFormat(glm::vec3(2.8f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),      // outside-Bottom-right   1
-        VertexFormat(glm::vec3(2.8f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // outside-Top-right      2
-        VertexFormat(glm::vec3(-2.8f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // outside-Top-left       3
-
-        VertexFormat(glm::vec3(-2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Bottom-left     4
-        VertexFormat(glm::vec3(2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Bottom-right    5
-        VertexFormat(glm::vec3(2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Top-right       6
-        VertexFormat(glm::vec3(-2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Top-left        7
-
-        VertexFormat(glm::vec3(-2.7f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),     // margin-Bottom-left     8
-        VertexFormat(glm::vec3(2.7f, 0, 0), glm::vec3(HEALTH_BAR_COLOR)),      // margin-Bottom-right    9
-        VertexFormat(glm::vec3(2.7f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // margin-Top-right       10
-        VertexFormat(glm::vec3(-2.7f, 1.2f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // margin-Top-left        11
-    };
-
-    vector<unsigned int> indices
-    {
-        // bottom side
-        4, 8, 5,
-        8, 9, 5,
-
-        // right side
-        9, 1, 10,
-        1, 2, 10,
-
-        // top side
-        11, 7, 6,
-        11, 6, 10,
-
-        // left side
-        0, 8, 3,
-        3, 8, 11
-    };
-
-    // Create the mesh from the data
-    CreateMesh("health-bar-border", vertices, indices);
-}
-
-void Tema1::AddHealthBarMesh()
-{
-    vector<VertexFormat> vertices
-    {
-        VertexFormat(glm::vec3(-2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Bottom-left     0
-        VertexFormat(glm::vec3(2.7f, 0.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Bottom-right    1
-        VertexFormat(glm::vec3(2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),   // inside-Top-right       2
-        VertexFormat(glm::vec3(-2.7f, 1.1f, 0), glm::vec3(HEALTH_BAR_COLOR)),  // inside-Top-left        3
-    };
-
-    vector<unsigned int> indices
-    {
-        0, 1, 2,
-        0, 2, 3,
-    };
-
-    // Create the mesh from the data
-    CreateMesh("health-bar", vertices, indices);
-}
-
-void Tema1::DrawProjectileTrajectories()
-{
-    /* Draw trajectory for tank1 projectile */
-
-    if (tank1.health > 0) {
-
-        Projectile projectile = Projectile();
-        vector<VertexFormat> vertices;
-        vector<unsigned int> indices;
-
-        // initialize projectile parameters
-        projectile.x0 = tank1.turretPosition.x + TURRET_LENGTH * cos(tank1.turretAngle + M_PI_2);
-        projectile.y0 = tank1.turretPosition.y + TURRET_LENGTH * sin(tank1.turretAngle + M_PI_2);
-        projectile.x = projectile.x0;
-        projectile.y = projectile.y0;
-        projectile.initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank1.turretAngle + M_PI_2);
-        projectile.initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank1.turretAngle + M_PI_2);
-
-        for (size_t time = 0; time < TRAJECTORY_POINTS_NR; time++) {
-            // update projectile's attributes of movement
-            projectile.x = projectile.x0 + 0.5f * time * projectile.initialSpeedX;
-            projectile.y = GetProjectilePositionY(projectile.y0, projectile.initialSpeedY, 0.5f * time);
-
-            //cout << "pushing: sinus = " << sin(tank1.turretAngle + M_PI_2) << "cos = " << cos(tank1.turretAngle + M_PI_2) << ", x=" << projectile.x << ", y=" << projectile.y << "\n";
-
-            vertices.push_back(VertexFormat(glm::vec3(projectile.x, projectile.y, 0), glm::vec3(TRAJECTORY_COLOR)));
-            indices.push_back(time);
-
-            modelMatrix = glm::mat3(1);
-            modelMatrix *= transform2D::Translate(projectile.x, projectile.y);
-            modelMatrix *= transform2D::Scale(PROJECTILE_SIZE / 2, PROJECTILE_SIZE / 2);
-            RenderMesh2D(meshes["projectile-trajectory"], shaders["VertexColor"], modelMatrix);
-        }
-    }
-
-    /* Draw trajectory for tank2 projectile */
-    if (tank2.health > 0) {
-        Projectile projectile = Projectile();
-        vector<VertexFormat> vertices;
-        vector<unsigned int> indices;
-
-        // initialize projectile parameters
-        projectile.x0 = tank2.turretPosition.x + TURRET_LENGTH * cos(tank2.turretAngle + M_PI_2);
-        projectile.y0 = tank2.turretPosition.y + TURRET_LENGTH * sin(tank2.turretAngle + M_PI_2);
-        projectile.x = projectile.x0;
-        projectile.y = projectile.y0;
-        projectile.initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank2.turretAngle + M_PI_2);
-        projectile.initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank2.turretAngle + M_PI_2);
-
-        for (size_t time = 0; time < TRAJECTORY_POINTS_NR; time++) {
-            // update projectile's attributes of movement
-            projectile.x = projectile.x0 + 0.5f * time * projectile.initialSpeedX;
-            projectile.y = GetProjectilePositionY(projectile.y0, projectile.initialSpeedY, 0.5f * time);
-
-            //cout << "pushing: sinus = " << sin(tank1.turretAngle + M_PI_2) << "cos = " << cos(tank1.turretAngle + M_PI_2) << ", x=" << projectile.x << ", y=" << projectile.y << "\n";
-
-            vertices.push_back(VertexFormat(glm::vec3(projectile.x, projectile.y, 0), glm::vec3(TRAJECTORY_COLOR)));
-            indices.push_back(time);
-
-            modelMatrix = glm::mat3(1);
-            modelMatrix *= transform2D::Translate(projectile.x, projectile.y);
-            modelMatrix *= transform2D::Scale(PROJECTILE_SIZE / 2, PROJECTILE_SIZE / 2);
-            RenderMesh2D(meshes["projectile-trajectory"], shaders["VertexColor"], modelMatrix);
+    for (size_t i = 0; i < tanksNumber; i++) {
+        for (size_t j = 0; j < MAX_PROJECTILES_NR; j++) {
+            tanks[i].projectiles[j].ResetProjectile();
         }
     }
 }
@@ -555,7 +163,6 @@ void Tema1::UpdateTerrain(float deltaTimeSeconds)
     bool isHigherPoint = false;
     for (unsigned int i = 0; (i < terrainPointsNr) && (!isHigherPoint); i++) {
         float dy = abs(terrainPoints[i].y - terrainPoints[i + 1].y);
-        //if (i==500) cout <<"y1=" << terrainPoints[i].y << "y2=" << terrainPoints[i+1].y << " diff= " << dy << endl;
         // check if is higher than the limit
         if (dy > SLIDING_THRESHOLD) {
             isHigherPoint = true;
@@ -647,95 +254,55 @@ float Tema1::GetTankAngle(float x)
 
 void Tema1::RenderTanksComponents(float deltaTimeSeconds)
 {
-    if (tank1.health > 0) {
-        // update tanks' Y coordinates
-        tank1.positionY = GetPositionY(tank1.positionX);
+    for (size_t i = 0; i < tanksNumber; i++) {
+        if (tanks[i].health > 0) {
+            // update tanks' Y coordinates
+            tanks[i].positionY = GetPositionY(tanks[i].positionX);
 
-        // compute tanks rotation angle
-        if (tank1.positionY == 0) {
-            tank1.rotationAngle = 0;
-        } else {
-            tank1.rotationAngle = GetTankAngle(tank1.positionX);
+            // compute tanks rotation angle
+            if (tanks[i].positionY == 0) {
+                tanks[i].rotationAngle = 0;
+            }
+            else {
+                tanks[i].rotationAngle = GetTankAngle(tanks[i].positionX);
+            }
+
+            // tank health bar border
+            modelMatrix = glm::mat3(1);
+            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY + TANK_SIZE * 2.5f);
+            modelMatrix *= transform2D::Scale(TANK_SIZE / 2, TANK_SIZE / 2);
+            RenderMesh2D(meshes["health-bar-border"], shaders["VertexColor"], modelMatrix);
+
+            // tank health bar
+            modelMatrix = glm::mat3(1);
+            // move the health bar to the left by "consumed health/2"
+            modelMatrix *= transform2D::Translate(-(((MAX_HEALTH_POINTS - tanks[i].health) / MAX_HEALTH_POINTS) * 5.4 * TANK_SIZE / 2) / 2, 0);
+            // translate the health bar above the tank
+            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY + TANK_SIZE * 2.5f);
+            modelMatrix *= transform2D::Scale((TANK_SIZE / 2) * (tanks[i].health / MAX_HEALTH_POINTS), TANK_SIZE / 2);
+            RenderMesh2D(meshes["health-bar"], shaders["VertexColor"], modelMatrix);
+
+            // tank
+            modelMatrix = glm::mat3(1);
+            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY - 3); // -3 for the tank to enter the terrain surface
+            modelMatrix *= transform2D::Rotate(tanks[i].rotationAngle);
+            modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
+
+            string meshID = "tank-" + to_string(i); // e.g. tank-0, tank-1, etc
+            RenderMesh2D(meshes[meshID.c_str()], shaders["VertexColor"], modelMatrix);
+
+            // tank turret
+            modelMatrix = glm::mat3(1);
+            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY - 3);
+            modelMatrix *= transform2D::Rotate(tanks[i].rotationAngle);
+            modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
+            modelMatrix *= transform2D::Rotate(tanks[i].turretAngle - tanks[i].rotationAngle);
+            modelMatrix *= transform2D::Scale(TURRET_WIDTH, TURRET_LENGTH);
+            RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
+
+            // update turret's position
+            tanks[i].turretPosition = glm::vec2(modelMatrix[2][0], modelMatrix[2][1]);
         }
-
-        // tank1 health bar border
-        modelMatrix = glm::mat3(1);
-        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY + TANK_SIZE*2.5f);
-        modelMatrix *= transform2D::Scale(TANK_SIZE/2, TANK_SIZE/2);
-        RenderMesh2D(meshes["health-bar-border"], shaders["VertexColor"], modelMatrix);
-
-        // tank1 health bar
-        modelMatrix = glm::mat3(1);
-        // move the health bar to the left by "consumed health/2"
-        modelMatrix *= transform2D::Translate( -(((MAX_HEALTH_POINTS - tank1.health) / MAX_HEALTH_POINTS) * 5.4 * TANK_SIZE / 2) / 2, 0);
-        // translate the health bar above the tank
-        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY + MAX_HEALTH_POINTS);
-        modelMatrix *= transform2D::Scale((TANK_SIZE/2) * (tank1.health / MAX_HEALTH_POINTS), TANK_SIZE / 2);
-        RenderMesh2D(meshes["health-bar"], shaders["VertexColor"], modelMatrix);
-
-        // tank1
-        modelMatrix = glm::mat3(1);
-        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3); // -3 for the tank to enter the terrain surface
-        modelMatrix *= transform2D::Rotate(tank1.rotationAngle);
-        modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
-        RenderMesh2D(meshes["tank1"], shaders["VertexColor"], modelMatrix);
-
-        // tank1 turret
-        modelMatrix = glm::mat3(1);
-        modelMatrix *= transform2D::Translate(tank1.positionX, tank1.positionY - 3);
-        modelMatrix *= transform2D::Rotate(tank1.rotationAngle);
-        modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
-        modelMatrix *= transform2D::Rotate(tank1.turretAngle - tank1.rotationAngle);
-        modelMatrix *= transform2D::Scale(TURRET_WIDTH, TURRET_LENGTH);
-        RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
-
-        // update turret's position
-        tank1.turretPosition = glm::vec2(modelMatrix[2][0], modelMatrix[2][1]);
-    }
-
-    if (tank2.health > 0) {
-        tank2.positionY = GetPositionY(tank2.positionX);
-
-        if (tank2.positionY == 0) {
-            tank2.rotationAngle = 0;
-        }
-        else {
-            tank2.rotationAngle = GetTankAngle(tank2.positionX);
-        }
-
-        // tank2 health bar border
-        modelMatrix = glm::mat3(1);
-        modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY + TANK_SIZE*2.5f);
-        modelMatrix *= transform2D::Scale(TANK_SIZE / 2, TANK_SIZE / 2);
-        RenderMesh2D(meshes["health-bar-border"], shaders["VertexColor"], modelMatrix);
-
-        // tank2 health bar
-        modelMatrix = glm::mat3(1);
-        // move the health bar to the left by "consumed health/2"
-        modelMatrix *= transform2D::Translate(-(((MAX_HEALTH_POINTS - tank2.health) / MAX_HEALTH_POINTS) * 5.4 * TANK_SIZE / 2) / 2, 0);
-        // translate the health bar above the tank
-        modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY + MAX_HEALTH_POINTS);
-        modelMatrix *= transform2D::Scale((TANK_SIZE / 2) * (tank2.health / MAX_HEALTH_POINTS), TANK_SIZE / 2);
-        RenderMesh2D(meshes["health-bar"], shaders["VertexColor"], modelMatrix);
-
-        // tank2
-        modelMatrix = glm::mat3(1);
-        modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY - 3); // -3 for the tank to enter in the terrain surface
-        modelMatrix *= transform2D::Rotate(tank2.rotationAngle);
-        modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
-        RenderMesh2D(meshes["tank2"], shaders["VertexColor"], modelMatrix);
-
-        // tank2 turret
-        modelMatrix = glm::mat3(1);
-        modelMatrix *= transform2D::Translate(tank2.positionX, tank2.positionY - 3);
-        modelMatrix *= transform2D::Rotate(tank2.rotationAngle);
-        modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
-        modelMatrix *= transform2D::Rotate(tank2.turretAngle - tank2.rotationAngle);
-        modelMatrix *= transform2D::Scale(TURRET_WIDTH, TURRET_LENGTH);
-        RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
-
-        // update turret's position
-        tank2.turretPosition = glm::vec2(modelMatrix[2][0], modelMatrix[2][1]);
     }
 
     RenderTanksProjectiles(deltaTimeSeconds);
@@ -746,39 +313,22 @@ float Tema1::GetProjectilePositionY(float y0, float initialSpeedY, float t) {
 }
 
 void Tema1::ProjectileTerrainCollision(float x) {
-    // decrease terrain height
+    // locally decrease terrain height
     int collisionPointsNr = 2*(EXPLOSION_RADIUS / windowSegmentSizeX);
     int collisionIndex = x / windowSegmentSizeX;
 
     if ((collisionIndex >= 0) && (collisionIndex <= terrainPointsNr)) {
-        //cout << "col idx = " << collisionIndex << "\n";
-        //cout << "start i = " << collisionIndex - collisionPointsNr / 2 << "\n";
-        // if the radius is outside the smaller limit, make changes starting with terrainPoints[0]
+        // if the radius is outside the smaller limit (0), make changes starting with terrainPoints[0]
         for (size_t i = std::max(0, collisionIndex - collisionPointsNr / 2); i <= collisionIndex + collisionPointsNr / 2; i++) {
             float dx = abs(terrainPoints[collisionIndex].x - terrainPoints[i].x);
             float dy = sqrt(EXPLOSION_RADIUS * EXPLOSION_RADIUS - dx * dx);
-            //cout << "x=" << terrainPoints[i].x << "y=" << terrainPoints[i].y << "\n";
-            //cout << "dx=" << dx << "dy=" << dy << "\n";
-
             // update y-coordinate corresponding to the collision location
-            //float max_y = terrainPoints[collisionIndex].y + EXPLOSION_RADIUS;
-            //float min_y = terrainPoints[collisionIndex].y - EXPLOSION_RADIUS;
-            //if ((terrainPoints[i].y < max_y && terrainPoints[i].y > min_y)) {
             terrainPoints[i].y -= dy;
         }
     }
 }
 
-bool inTanksArea(float projectileX, float tankX) {
-    float startTankAreaX = tankX - 1.4f * TANK_SIZE;
-    float endTankAreaX = tankX + 1.4f * TANK_SIZE;
-    if ((projectileX >= startTankAreaX) && (projectileX <= endTankAreaX)) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
+/* Generates up-down movement in case of projectile collision */
 void Tema1::CameraShake(float deltaTimeSeconds) {
     if ((cameraShakeDirection == 'N')) {
         if ((cameraPosition.y < 18)) {
@@ -810,11 +360,15 @@ void Tema1::CameraShake(float deltaTimeSeconds) {
         cameraIsShaking = false;
         //cout << "shake done!";
     }
-    //camera->MoveRight(200*deltaTimeSeconds);
 }
 
-void ProjectileTankCollision(Tank &tank) {
-    tank.health -= PROJECTILE_DAMAGE;
+bool Tema1::IsAnyTankNearProjectile(float projectileX) {
+    for (size_t i = 0; i < tanksNumber; i++) {
+        if (tanks[i].isNearProjectile(projectileX)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
@@ -823,80 +377,54 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
         CameraShake(deltaTimeSeconds);
     }
 
-    // position of the tank1 projectiles
-    for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
-        if (!tank1.projectiles[i].isIdle) {
-            if ((tank1.projectiles[i].x >= 0) && (tank1.projectiles[i].x <= windowSegmentSizeX * terrainPointsNr)) {
-                // the projectile has been launched
-                float projectileToGroundDiff = tank1.projectiles[i].y - GetPositionY(tank1.projectiles[i].x);
-                if ((projectileToGroundDiff < TANK_COLLISION_THRESHOLD) && inTanksArea(tank1.projectiles[i].x, tank2.positionX)) {
-                    ProjectileTankCollision(tank2);
-                    // reset projectile
-                    tank1.projectiles[i].ResetProjectile();
-                    // perform camera shake
-                    cameraIsShaking = true;
-                    cameraShakeDirection = 'N';
-                    cout << "new health of tank2: " << tank2.health << "\n";
-                } else if (projectileToGroundDiff < TERRAIN_COLLISION_THRESHOLD) {
-                    ProjectileTerrainCollision(tank1.projectiles[i].x);
-                    tank1.projectiles[i].ResetProjectile();
-                    // perform camera shake
-                    cameraIsShaking = true;
-                    cameraShakeDirection = 'N';
-                } else {
-                    modelMatrix = glm::mat3(1);
+    // compute the position of all tanks' projectiles
 
-                    // update projectile's attributes of movement
-                    tank1.projectiles[i].time += 5 * deltaTimeSeconds;
-                    tank1.projectiles[i].x = tank1.projectiles[i].x0 + tank1.projectiles[i].time * tank1.projectiles[i].initialSpeedX;
-                    tank1.projectiles[i].y = GetProjectilePositionY(tank1.projectiles[i].y0, tank1.projectiles[i].initialSpeedY, tank1.projectiles[i].time);
+    for (size_t i = 0; i < tanksNumber; i++) {
+        for (size_t j = 0; j < MAX_PROJECTILES_NR; j++) {
+            if (!tanks[i].projectiles[j].isIdle) {
+                // the projectile has been launched, now it is moving
+                // check terrain limits
+                if ((tanks[i].projectiles[j].x >= 0) && (tanks[i].projectiles[j].x <= windowSegmentSizeX * terrainPointsNr)) {
+                    float projectileToGroundDiff = tanks[i].projectiles[j].y - GetPositionY(tanks[i].projectiles[j].x);
 
-                    modelMatrix *= transform2D::Translate(tank1.projectiles[i].x, tank1.projectiles[i].y);
-                    modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
-                    RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
+                    if ((projectileToGroundDiff < TANK_COLLISION_THRESHOLD) && (IsAnyTankNearProjectile(tanks[i].projectiles[j].x))) {
+                        // check if the projectile is near any tank and modify tank's health if it collides
+                        for (size_t k = 0; k < tanksNumber; k++) {
+                            if (tanks[k].isNearProjectile(tanks[i].projectiles[j].x)) {
+                                tanks[k].collidesWithProjectile();
+                                // reset projectile
+                                tanks[i].projectiles[j].ResetProjectile();
+                                // perform camera shake
+                                cameraIsShaking = true;
+                                cameraShakeDirection = 'N';
+                                cout << "new health of tank" << k << ": " << tanks[k].health << "\n";
+                            }
+                        }
+                    }
+                    else if (projectileToGroundDiff < TERRAIN_COLLISION_THRESHOLD) {
+                        ProjectileTerrainCollision(tanks[i].projectiles[j].x);
+                        tanks[i].projectiles[j].ResetProjectile();
+                        // perform camera shake
+                        cameraIsShaking = true;
+                        cameraShakeDirection = 'N';
+                    }
+                    else {
+                        modelMatrix = glm::mat3(1);
+
+                        // update projectile's attributes of movement
+                        tanks[i].projectiles[j].time += 5 * deltaTimeSeconds;
+                        tanks[i].projectiles[j].x = tanks[i].projectiles[j].x0 + tanks[i].projectiles[j].time * tanks[i].projectiles[j].initialSpeedX;
+                        tanks[i].projectiles[j].y = GetProjectilePositionY(tanks[i].projectiles[j].y0, tanks[i].projectiles[j].initialSpeedY, tanks[i].projectiles[j].time);
+
+                        modelMatrix *= transform2D::Translate(tanks[i].projectiles[j].x, tanks[i].projectiles[j].y);
+                        modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
+                        RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
+                    }
                 }
-            } else {
-                // the projectile is outside the terrain limits, reset the projectile
-                tank1.projectiles[i].ResetProjectile();
-            }
-        }
-    }
-    
-    // position of the tank2 projectiles
-    for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
-        if (!tank2.projectiles[i].isIdle) {
-            if ((tank2.projectiles[i].x >= 0) && (tank2.projectiles[i].x <= windowSegmentSizeX * terrainPointsNr)) {
-                // the projectile has been launched
-                float projectileToGroundDiff = tank2.projectiles[i].y - GetPositionY(tank2.projectiles[i].x);
-                if ((projectileToGroundDiff < TANK_COLLISION_THRESHOLD) && inTanksArea(tank2.projectiles[i].x, tank1.positionX)) {
-                    ProjectileTankCollision(tank1);
-                    // reset projectile
-                    tank2.projectiles[i].ResetProjectile();
-                    // perform camera shake
-                    cameraIsShaking = true;
-                    cameraShakeDirection = 'N';
-                    cout << "new health of tank1: " << tank1.health << "\n";
-                } else if (projectileToGroundDiff < TERRAIN_COLLISION_THRESHOLD) {
-                    ProjectileTerrainCollision(tank2.projectiles[i].x);
-                    tank2.projectiles[i].ResetProjectile();
-                    // perform camera shake
-                    cameraIsShaking = true;
-                    cameraShakeDirection = 'N';
-                } else {
-                    modelMatrix = glm::mat3(1);
-
-                    // update projectile's attributes of movement
-                    tank2.projectiles[i].time += 5 * deltaTimeSeconds;
-                    tank2.projectiles[i].x = tank2.projectiles[i].x0 + tank2.projectiles[i].time * tank2.projectiles[i].initialSpeedX;
-                    tank2.projectiles[i].y = GetProjectilePositionY(tank2.projectiles[i].y0, tank2.projectiles[i].initialSpeedY, tank2.projectiles[i].time);
-
-                    modelMatrix *= transform2D::Translate(tank2.projectiles[i].x, tank2.projectiles[i].y);
-                    modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
-                    RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
+                else {
+                    // the projectile is outside the terrain limits, reset the projectile
+                    tanks[i].projectiles[j].ResetProjectile();
                 }
-            } else {
-                // the projectile is outside the terrain limits, reset the projectile
-                tank2.projectiles[i].ResetProjectile();
             }
         }
     }
@@ -916,75 +444,71 @@ void Tema1::FrameEnd()
 
 void Tema1::OnInputUpdate(float deltaTime, int mods)
 {
-    if (tank1.health > 0) {
+    if (tanks[0].health > 0) {
         // left-right movement (with OX-axis window limits)
-        if ((window->KeyHold(GLFW_KEY_A) == true) && (tank1.positionX - deltaTime * TANK_SPEED > 0)) {
-            tank1.positionX -= deltaTime * TANK_SPEED;
+        if ((window->KeyHold(GLFW_KEY_A) == true) && (tanks[0].positionX - deltaTime * TANK_SPEED > 0)) {
+            tanks[0].positionX -= deltaTime * TANK_SPEED;
         }
-        else if ((window->KeyHold(GLFW_KEY_D) == true) && (tank1.positionX + deltaTime * TANK_SPEED < 1920)) {
-            tank1.positionX += deltaTime * TANK_SPEED;
+        else if ((window->KeyHold(GLFW_KEY_D) == true) && (tanks[0].positionX + deltaTime * TANK_SPEED < 1920)) {
+            tanks[0].positionX += deltaTime * TANK_SPEED;
         }
 
         if (window->KeyHold(GLFW_KEY_W) == true) {
-            tank1.turretAngle += 2 * deltaTime;
+            tanks[0].turretAngle += 2 * deltaTime;
         }
         else if (window->KeyHold(GLFW_KEY_S) == true) {
-            tank1.turretAngle -= 2 * deltaTime;
+            tanks[0].turretAngle -= 2 * deltaTime;
         }
     }
 
-    if (tank2.health > 0) {
-        if ((window->KeyHold(GLFW_KEY_LEFT) == true) && (tank2.positionX - deltaTime * TANK_SPEED > 0)) {
-            tank2.positionX -= deltaTime * TANK_SPEED;
+    if (tanks[1].health > 0) {
+        if ((window->KeyHold(GLFW_KEY_LEFT) == true) && (tanks[1].positionX - deltaTime * TANK_SPEED > 0)) {
+            tanks[1].positionX -= deltaTime * TANK_SPEED;
         }
-        else if ((window->KeyHold(GLFW_KEY_RIGHT) == true) && (tank2.positionX + deltaTime * TANK_SPEED < 1920)) {
-            tank2.positionX += deltaTime * TANK_SPEED;
+        else if ((window->KeyHold(GLFW_KEY_RIGHT) == true) && (tanks[1].positionX + deltaTime * TANK_SPEED < 1920)) {
+            tanks[1].positionX += deltaTime * TANK_SPEED;
         }
 
         if (window->KeyHold(GLFW_KEY_UP) == true) {
-            tank2.turretAngle -= 2 * deltaTime;
+            tanks[1].turretAngle -= 2 * deltaTime;
         }
         else if (window->KeyHold(GLFW_KEY_DOWN) == true) {
-            tank2.turretAngle += 2 * deltaTime;
+            tanks[1].turretAngle += 2 * deltaTime;
         }
     }
 }
 
 void Tema1::OnKeyPress(int key, int mods)
 {
-    if ((key == GLFW_KEY_SPACE) && (tank1.health > 0)) {
+    if ((key == GLFW_KEY_SPACE) && (tanks[0].health > 0)) {
         // launch an available projectile from tank1
         for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
             // launch the first available idle projectile
-            if (tank1.projectiles[i].isIdle) {
-                tank1.projectiles[i].isIdle = false;
-                //tank2.projectiles[i].x0 = tank2.positionX * cos(tank2.rotationAngle) - tank2.positionY * sin(tank2.rotationAngle);
-                //tank2.projectiles[i].y0 = tank2.positionX * sin(tank2.rotationAngle) + tank2.positionY * cos(tank2.rotationAngle);
-                tank1.projectiles[i].x0 = tank1.turretPosition.x + TURRET_LENGTH * cos(tank1.turretAngle + M_PI_2);
-                tank1.projectiles[i].y0 = tank1.turretPosition.y + TURRET_LENGTH * sin(tank1.turretAngle + M_PI_2);
-                tank1.projectiles[i].x = tank1.projectiles[i].x0;
-                tank1.projectiles[i].y = tank1.projectiles[i].y0;
-                tank1.projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank1.turretAngle + M_PI_2);
-                tank1.projectiles[i].initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank1.turretAngle + M_PI_2);
+            if (tanks[0].projectiles[i].isIdle) {
+                tanks[0].projectiles[i].isIdle = false;
+                tanks[0].projectiles[i].x0 = tanks[0].turretPosition.x + TURRET_LENGTH * cos(tanks[0].turretAngle + M_PI_2);
+                tanks[0].projectiles[i].y0 = tanks[0].turretPosition.y + TURRET_LENGTH * sin(tanks[0].turretAngle + M_PI_2);
+                tanks[0].projectiles[i].x = tanks[0].projectiles[i].x0;
+                tanks[0].projectiles[i].y = tanks[0].projectiles[i].y0;
+                tanks[0].projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tanks[0].turretAngle + M_PI_2);
+                tanks[0].projectiles[i].initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tanks[0].turretAngle + M_PI_2);
                 break;
             }
         }
     }
 
-    if ((key == GLFW_KEY_ENTER) && (tank2.health > 0)) {
+    if ((key == GLFW_KEY_ENTER) && (tanks[1].health > 0)) {
         // launch an available projectile from tank2
         for (size_t i = 0; i < MAX_PROJECTILES_NR; i++) {
             // launch the first available idle projectile
-            if (tank2.projectiles[i].isIdle) {
-                tank2.projectiles[i].isIdle = false;
-                //tank2.projectiles[i].x0 = tank2.positionX * cos(tank2.rotationAngle) - tank2.positionY * sin(tank2.rotationAngle);
-                //tank2.projectiles[i].y0 = tank2.positionX * sin(tank2.rotationAngle) + tank2.positionY * cos(tank2.rotationAngle);
-                tank2.projectiles[i].x0 = tank2.turretPosition.x + TURRET_LENGTH * cos(tank2.turretAngle + M_PI_2);
-                tank2.projectiles[i].y0 = tank2.turretPosition.y + TURRET_LENGTH * sin(tank2.turretAngle + M_PI_2);
-                tank2.projectiles[i].x = tank2.projectiles[i].x0;
-                tank2.projectiles[i].y = tank2.projectiles[i].y0;
-                tank2.projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tank2.turretAngle + M_PI_2);
-                tank2.projectiles[i].initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tank2.turretAngle + M_PI_2);
+            if (tanks[1].projectiles[i].isIdle) {
+                tanks[1].projectiles[i].isIdle = false;
+                tanks[1].projectiles[i].x0 = tanks[1].turretPosition.x + TURRET_LENGTH * cos(tanks[1].turretAngle + M_PI_2);
+                tanks[1].projectiles[i].y0 = tanks[1].turretPosition.y + TURRET_LENGTH * sin(tanks[1].turretAngle + M_PI_2);
+                tanks[1].projectiles[i].x = tanks[1].projectiles[i].x0;
+                tanks[1].projectiles[i].y = tanks[1].projectiles[i].y0;
+                tanks[1].projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tanks[1].turretAngle + M_PI_2);
+                tanks[1].projectiles[i].initialSpeedY = PROJECTILE_INITIAL_SPEED * sin(tanks[1].turretAngle + M_PI_2);
                 break;
             }
         }
