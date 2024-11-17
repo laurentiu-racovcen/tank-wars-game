@@ -2,6 +2,7 @@
 
 #include "components/simple_scene.h"
 #include "Tank.h"
+#include "Menu.h"
 
 // for 1920x1080 resolution is enough
 #define MAX_TERRAIN_POINTS_NR 2000
@@ -25,7 +26,8 @@ namespace m1
         void AddProjectileTrajectoryMesh();
         void AddHealthBarBorderMesh();
         void AddHealthBarMesh();
-        void DrawProjectileTrajectories();
+        void DrawProjectileTrajectories(unsigned int tankScale);
+        void AddMenuMeshes();
 
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
@@ -48,12 +50,21 @@ namespace m1
         void InitTanksProjectilesData();
         void RenderTanksComponents(float deltaTimeSeconds);
         void RenderTanksProjectiles(float deltaTimeSeconds);
+        void RenderMenuBg(float deltaTimeSeconds);
+        void RenderSection(float deltaTimeSeconds);
+        void RenderMenuArrows(float deltaTimeSeconds);
+        void RenderText(std::string text, float posX, float posY, float scale, glm::vec3 color);
         float GetPositionY(float x);
         float GetTankAngle(float x);
         float GetProjectilePositionY(float y0, float initialSpeedY, float t);
         void ProjectileTerrainCollision(float x);
         bool IsAnyTankNearProjectile(float x);
 
+        int GetClickedTextBox(unsigned int cursorX, unsigned int cursorY);
+        int GetClickedArrow(unsigned int cursorX, unsigned int cursorY);
+        void TextBoxAction(unsigned int TextBoxIndex);
+        bool isTextboxClicked(TextBox textbox, int cursorX, int cursorY);
+        bool isArrowClicked(unsigned int arrowID, int cursorX, int cursorY);
     protected:
         glm::mat3 modelMatrix;
         glm::vec2 terrainPoints[MAX_TERRAIN_POINTS_NR];
@@ -65,6 +76,12 @@ namespace m1
         glm::vec3 cameraPosition;
         bool cameraIsShaking;
         char cameraShakeDirection;
-        bool gameStarted;
+        Menu menu;
+        bool showingMenu;
+        int window_width;
+        int window_height;
+        unsigned int tankScale;
+        std::string theme;
+        unsigned int roundsNumber;
     };
 }   // namespace m1

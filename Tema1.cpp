@@ -6,6 +6,10 @@
 #include "lab_m1/Tema1/transform2D.h"
 #include "lab_m1/Tema1/Object2D.h"
 
+// text library
+#define GLT_IMPLEMENTATION
+#include "lab_m1/Tema1/libs/gltext/gltext.h"
+
 // environment colors
 #define SKY_COLOR         0.5705, 0.688, 0.7529
 #define TERRAIN_COLOR     0.984, 0.8078, 0.290
@@ -18,16 +22,18 @@
                           0.15 * sin(0.8 * x) + \
                           0.3 * sin(3.3 * x) + 1.7f
 
-// start and end coordinates of the function on OX-axis
+// start and end coordinates of the function on X-axis
 #define FUNCTION_START_X  23.5f
 #define FUNCTION_END_X    30.5f
 
 // thresholds
 #define SLIDING_THRESHOLD 1.2f
 #define TERRAIN_COLLISION_THRESHOLD 2.0f
-#define TANK_COLLISION_THRESHOLD TANK_SIZE/2
+#define TANK_COLLISION_THRESHOLD DEFAULT_TANK_SIZE/2
 
 #define EXPLOSION_RADIUS 80.0f
+
+#define GAME_TITLE_COLOR 1, 1, 1
 
 using namespace std;
 using namespace m1;
@@ -77,6 +83,11 @@ void Tema1::Init()
     // initialize tanks number
     tanksNumber = 2;
 
+    // initialize tank size
+    tankScale = 1;
+    theme = "Simple";
+    roundsNumber = 1;
+
     // initialize tanks position
     tanks[0].positionX = TANK1_INITIAL_X_POS;
     tanks[1].positionX = TANK2_INITIAL_X_POS;
@@ -115,6 +126,48 @@ void Tema1::Init()
     InitTanksProjectilesData();
 
     AddProjectileTrajectoryMesh();
+
+    AddMenuMeshes();
+
+    // when opening the game, firstly show the menu
+    showingMenu = true;
+
+    // get window's resolution
+    window_width = SimpleScene::window->props.resolution.x;
+    window_height = SimpleScene::window->props.resolution.y;
+
+    unsigned int sectionsNumber = 3;
+
+    menu.sectionNameColor = glm::vec3(SECTION_NAME_COLOR);
+
+    menu.initMenuData(sectionsNumber, window_width/2, window_height/2.3f, window_width/2.3f, window_height/2);
+
+    // 2 buttons for tank size + 2*9 for tanks colors
+    // 5 texts for: tank size, "-", "+", 2 tanks strings
+    menu.sections[0] = MenuSection("Select*Tanks*Size", 0, 2 + 2 * 9, 5);
+
+    /* Theme section */
+    // 4 buttons for 4 themes
+    // 4 texts for 4 themes
+    menu.sections[1] = MenuSection("Theme-Selection", 1, 4, 4);
+
+    /* Number of rounds section */
+    // 2 buttons for round incremention/decrementation
+    // 3 texts for "-", "+" and rounds number
+    menu.sections[2] = MenuSection("Number-of-rounds", 2, 2, 3);
+
+    // initialize sections' buttons and texts
+    for (size_t i = 0; i < menu.sectionsNumber; i++) {
+        menu.sections[i].initTextBoxes(window_width, window_height);
+        menu.sections[i].updateTexts(tankScale, roundsNumber);
+    }
+
+    // open menu's first section
+    menu.currentSection = 0;
+
+    // initialize glText
+    gltInit();
+
 }
 
 float Tema1::TerrainFunction(float x)
@@ -269,24 +322,24 @@ void Tema1::RenderTanksComponents(float deltaTimeSeconds)
 
             // tank health bar border
             modelMatrix = glm::mat3(1);
-            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY + TANK_SIZE * 2.5f);
-            modelMatrix *= transform2D::Scale(TANK_SIZE / 2, TANK_SIZE / 2);
+            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY + tankScale*DEFAULT_TANK_SIZE * 2.5f);
+            modelMatrix *= transform2D::Scale(tankScale*DEFAULT_TANK_SIZE / 2, tankScale*DEFAULT_TANK_SIZE / 2);
             RenderMesh2D(meshes["health-bar-border"], shaders["VertexColor"], modelMatrix);
 
             // tank health bar
             modelMatrix = glm::mat3(1);
             // move the health bar to the left by "consumed health/2"
-            modelMatrix *= transform2D::Translate(-(((MAX_HEALTH_POINTS - tanks[i].health) / MAX_HEALTH_POINTS) * 5.4 * TANK_SIZE / 2) / 2, 0);
+            modelMatrix *= transform2D::Translate(-(((MAX_HEALTH_POINTS - tanks[i].health) / MAX_HEALTH_POINTS) * 5.4 * tankScale*DEFAULT_TANK_SIZE / 2) / 2, 0);
             // translate the health bar above the tank
-            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY + TANK_SIZE * 2.5f);
-            modelMatrix *= transform2D::Scale((TANK_SIZE / 2) * (tanks[i].health / MAX_HEALTH_POINTS), TANK_SIZE / 2);
+            modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY + tankScale*DEFAULT_TANK_SIZE * 2.5f);
+            modelMatrix *= transform2D::Scale((tankScale*DEFAULT_TANK_SIZE / 2) * (tanks[i].health / MAX_HEALTH_POINTS), tankScale*DEFAULT_TANK_SIZE / 2);
             RenderMesh2D(meshes["health-bar"], shaders["VertexColor"], modelMatrix);
 
             // tank
             modelMatrix = glm::mat3(1);
             modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY - 3); // -3 for the tank to enter the terrain surface
             modelMatrix *= transform2D::Rotate(tanks[i].rotationAngle);
-            modelMatrix *= transform2D::Scale(TANK_SIZE, TANK_SIZE);
+            modelMatrix *= transform2D::Scale(tankScale*DEFAULT_TANK_SIZE, tankScale*DEFAULT_TANK_SIZE);
 
             string meshID = "tank-" + to_string(i); // e.g. tank-0, tank-1, etc
             RenderMesh2D(meshes[meshID.c_str()], shaders["VertexColor"], modelMatrix);
@@ -295,9 +348,9 @@ void Tema1::RenderTanksComponents(float deltaTimeSeconds)
             modelMatrix = glm::mat3(1);
             modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY - 3);
             modelMatrix *= transform2D::Rotate(tanks[i].rotationAngle);
-            modelMatrix *= transform2D::Translate(0, 0.8f * TANK_SIZE);
+            modelMatrix *= transform2D::Translate(0, 0.8f * tankScale * DEFAULT_TANK_SIZE);
             modelMatrix *= transform2D::Rotate(tanks[i].turretAngle - tanks[i].rotationAngle);
-            modelMatrix *= transform2D::Scale(TURRET_WIDTH, TURRET_LENGTH);
+            modelMatrix *= transform2D::Scale(TURRET_WIDTH*tankScale, TURRET_LENGTH*tankScale);
             RenderMesh2D(meshes["tank-turret"], shaders["VertexColor"], modelMatrix);
 
             // update turret's position
@@ -364,7 +417,7 @@ void Tema1::CameraShake(float deltaTimeSeconds) {
 
 bool Tema1::IsAnyTankNearProjectile(float projectileX) {
     for (size_t i = 0; i < tanksNumber; i++) {
-        if (tanks[i].isNearProjectile(projectileX)) {
+        if (tanks[i].isNearProjectile(projectileX, tankScale)) {
             return true;
         }
     }
@@ -390,7 +443,7 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                     if ((projectileToGroundDiff < TANK_COLLISION_THRESHOLD) && (IsAnyTankNearProjectile(tanks[i].projectiles[j].x))) {
                         // check if the projectile is near any tank and modify tank's health if it collides
                         for (size_t k = 0; k < tanksNumber; k++) {
-                            if (tanks[k].isNearProjectile(tanks[i].projectiles[j].x)) {
+                            if (tanks[k].isNearProjectile(tanks[i].projectiles[j].x, tankScale)) {
                                 tanks[k].collidesWithProjectile();
                                 // reset projectile
                                 tanks[i].projectiles[j].ResetProjectile();
@@ -417,7 +470,7 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                         tanks[i].projectiles[j].y = GetProjectilePositionY(tanks[i].projectiles[j].y0, tanks[i].projectiles[j].initialSpeedY, tanks[i].projectiles[j].time);
 
                         modelMatrix *= transform2D::Translate(tanks[i].projectiles[j].x, tanks[i].projectiles[j].y);
-                        modelMatrix *= transform2D::Scale(PROJECTILE_SIZE, PROJECTILE_SIZE);
+                        modelMatrix *= transform2D::Scale(PROJECTILE_SIZE*tankScale, PROJECTILE_SIZE*tankScale);
                         RenderMesh2D(meshes["projectile"], shaders["VertexColor"], modelMatrix);
                     }
                 }
@@ -430,15 +483,252 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
     }
 }
 
+void Tema1::RenderText(string text, float posX, float posY, float scale, glm::vec3 color) {
+    glDisable(GL_DEPTH_TEST);
+
+    // Creating text
+    GLTtext* text_struct = gltCreateText();
+    gltSetText(text_struct, text.c_str());
+
+    // Begin text drawing
+    gltBeginDraw();
+
+    gltColor(color.x, color.y, color.z, 1.0f);
+    gltDrawText2D(text_struct, posX, posY, scale);
+
+    glEnable(GL_DEPTH_TEST);
+
+    //// Finish drawing text
+    //gltEndDraw();
+
+    //// Deleting text
+    //gltDeleteText(text);
+
+    //// Destroy glText
+    //gltTerminate();
+}
+
+void Tema1::RenderMenuBg(float deltaTimeSeconds)
+{
+    modelMatrix = glm::mat3(1);
+    modelMatrix *= transform2D::Translate(menu.posX, menu.posY);
+    modelMatrix *= transform2D::Scale(menu.width, menu.height);
+    RenderMesh2D(meshes["menu-background"], shaders["VertexColor"], modelMatrix);
+
+    RenderText("Tank-Wars", 1.0f*menu.posX/1.525f, 1.0f*menu.posY/ 2.8f, 8, glm::vec3(GAME_TITLE_COLOR));
+
+}
+
+void Tema1::RenderSection(float deltaTimeSeconds)
+{
+    /* render section background */
+    modelMatrix = glm::mat3(1);
+    modelMatrix *= transform2D::Translate(menu.posX, menu.posY);
+    modelMatrix *= transform2D::Scale(menu.width - 30, menu.height - 30);
+    RenderMesh2D(meshes["menu-section-background"], shaders["VertexColor"], modelMatrix);
+
+    /* render section name */
+    RenderText(menu.sections[menu.currentSection].name, 1.0f*window_width / 2.8f, 1.0f*window_height / 2.7f, 3.5f, menu.sectionNameColor);
+
+    for (size_t i = 0; i < menu.sections[menu.currentSection].textBoxesNr; i++) {
+        if (menu.sections[menu.currentSection].textBoxes[i].text != "") {
+            /* render button text */
+            RenderText(menu.sections[menu.currentSection].textBoxes[i].text,
+                menu.sections[menu.currentSection].textBoxes[i].posX,
+                menu.sections[menu.currentSection].textBoxes[i].posY,
+                menu.sections[menu.currentSection].textBoxes[i].scale,
+                menu.sections[menu.currentSection].textBoxes[i].color);
+        }
+    }
+
+    RenderMenuBg(deltaTimeSeconds);
+}
+
+//void Tema1::RenderButton(Button button) {
+//    modelMatrix = glm::mat3(1);
+//    modelMatrix *= transform2D::Translate(button.posX, button.posY);
+//    modelMatrix *= transform2D::Scale(button.scaleX, button.scaleY);
+//
+//    RenderMesh2D(meshes["button-" + button.color], shaders["VertexColor"], modelMatrix);
+//}
+
+void Tema1::RenderMenuArrows(float deltaTimeSeconds)
+{
+    window_width = SimpleScene::window->props.resolution.x;
+    window_height = SimpleScene::window->props.resolution.y;
+
+    // show current section's buttons
+    if (menu.currentSection == 0) {
+        // add only right menu arrow
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(1.0f * window_width / 1.355f, 1.0f * window_height / 2.8f);
+        modelMatrix *= transform2D::Scale(1.0f * window_width / 9, 1.0f * menu.height / 3.5f);
+        RenderMesh2D(meshes["menu-arrow"], shaders["VertexColor"], modelMatrix);
+
+        //int right_arrow_x = modelMatrix[2][0];
+        //int right_arrow_y = modelMatrix[2][1];
+        //cout << "right arrow x = " << right_arrow_x << "\n" << "right arrow y = " << right_arrow_y << "\n";
+
+    } else if (menu.currentSection > 0) {
+
+        // add left menu arrow
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(1.0f * window_width / 3.79f, 1.0f * window_height / 2.0f);
+        modelMatrix *= transform2D::Scale(1.0f * window_width / 9, 1.0f * menu.height / 3.5f);
+        modelMatrix *= transform2D::Rotate(M_PI);
+        RenderMesh2D(meshes["menu-arrow"], shaders["VertexColor"], modelMatrix);
+
+        // add right menu arrow
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(1.0f * window_width / 1.355f, 1.0f * window_height / 2.8f);
+        modelMatrix *= transform2D::Scale(1.0f * window_width / 9, 1.0f * menu.height / 3.5f);
+        RenderMesh2D(meshes["menu-arrow"], shaders["VertexColor"], modelMatrix);
+    }
+
+    //// render current sections' buttons
+    //for (size_t i = 0; i < menu.sections[menu.currentSection].buttonsNumber; i++) {
+    //    RenderButton(menu.sections[menu.currentSection].buttons[i]);
+    //}
+
+    // render section background
+    RenderSection(deltaTimeSeconds);
+}
+
+bool Tema1::isArrowClicked(unsigned int arrowID, int cursorX, int cursorY)
+{
+    window_width = SimpleScene::window->props.resolution.x;
+    window_height = SimpleScene::window->props.resolution.y;
+
+    // relative to left-bottom corner
+    float arrowScaleX = 1.0f * window_width / 9;
+    float arrowScaleY = 1.0f * menu.height / 3.5f;
+    if (arrowID == 0) {
+        cursorY = window_height - cursorY;
+        // checking left arrow
+        float arrowPosX = 1.0f * window_width / 3.79f;
+        float arrowPosY = window_height - (1.0f * window_height / 2.0f);
+        
+        if ((cursorX < arrowPosX) && (cursorX > arrowPosX - arrowScaleX)) {
+            // check Y coordinate
+            if ((cursorY < arrowPosY) && (cursorY > arrowPosY - arrowScaleY)) {
+                // check Y coordinate
+                return true;
+            }
+        }
+    } else if (arrowID == 1) {
+        // checking right arrow
+        float arrowPosX = (1.0f * window_width / 1.355f);
+        float arrowPosY = window_height - (1.0f * window_height / 2.8f);
+        if ((cursorX > arrowPosX) && (cursorX < arrowPosX + arrowScaleX)) {
+            // check Y coordinate
+            if ((cursorY < arrowPosY) && (cursorY > arrowPosY - arrowScaleY)) {
+                // check Y coordinate
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// return the mouse-clicked textbox
+int Tema1::GetClickedArrow(unsigned int cursorX, unsigned int cursorY) {
+    for (size_t i = 0; i < 2; i++) {
+        if (isArrowClicked(i, cursorX, cursorY)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+bool Tema1::isTextboxClicked(TextBox textbox, int cursorX, int cursorY)
+{
+    if ((cursorX > textbox.posX) && (cursorX < textbox.posX + textbox.scale * textbox.text.length() * 9)) {
+        // cursor is in the width limits of this textbox
+        cout << "good X!\n";
+        if ((cursorY > textbox.posY) && (cursorY < textbox.posY + textbox.scale * 16)) {
+            // cursor is in the width limits of this textbox
+            cout << "The textbox -- " << textbox.text << " -- has been clicked!\n";
+            return true;
+        }
+    }
+    return false;
+}
+
+// return the mouse-clicked textbox
+int Tema1::GetClickedTextBox(unsigned int cursorX, unsigned int cursorY) {
+    for (size_t i = 0; i < menu.sections[menu.currentSection].textBoxesNr; i++) {
+        if (isTextboxClicked(menu.sections[menu.currentSection].textBoxes[i], cursorX, cursorY)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void Tema1::TextBoxAction(unsigned int TextBoxIndex) {
+    if (menu.currentSection == 0) {
+        // tankSize section
+        if (TextBoxIndex == 0) {
+            // decrement tankSize
+            if (tankScale > 1) {
+                tankScale--;
+            }
+        } else if (TextBoxIndex == 1) {
+            // increment tankSize
+            if (tankScale < 5) {
+                tankScale++;
+            }
+        }
+    } else if (menu.currentSection == 1) {
+        // theme section
+        if (TextBoxIndex == 0) {
+            // select Simple Theme
+            theme = "Simple";
+        } else if (TextBoxIndex == 1) {
+            // select Jungle Theme
+            theme = "Jungle";
+        } else if (TextBoxIndex == 2) {
+            // select Mud Theme
+            theme = "Mud";
+        } else if (TextBoxIndex == 2) {
+            // select Ice Theme
+            theme = "Ice";
+        }
+    } else if (menu.currentSection == 2) {
+        // Number of rounds section
+        if (TextBoxIndex == 0) {
+            // decrement rounds number
+            if (roundsNumber > 1) {
+                roundsNumber--;
+            }
+        } else if (TextBoxIndex == 1) {
+            if (roundsNumber < 10) {
+                // increment rounds number
+                roundsNumber++;
+            }
+        }
+    }
+}
+
 void Tema1::Update(float deltaTimeSeconds)
 {
-    if (!gameStarted) {
+    if (showingMenu) {
+        // get window's resolution
+        window_width = SimpleScene::window->props.resolution.x;
+        window_height = SimpleScene::window->props.resolution.y;
+        
+        for (size_t i = 0; i < menu.sectionsNumber; i++) {
+            menu.sections[i].updateTexts(tankScale, roundsNumber);
+        }
+        menu.updateData(window_width / 2, window_height / 2.3f, window_width / 2.3f, window_height / 2);
+
         // render the menu
+        RenderMenuArrows(deltaTimeSeconds);
+    } else {
+        UpdateTerrain(deltaTimeSeconds);
+        GenerateTerrain();
+        RenderTanksComponents(deltaTimeSeconds);
+        DrawProjectileTrajectories(tankScale);
     }
-    UpdateTerrain(deltaTimeSeconds);
-    GenerateTerrain();
-    RenderTanksComponents(deltaTimeSeconds);
-    DrawProjectileTrajectories();
 }
 
 void Tema1::FrameEnd()
@@ -531,6 +821,40 @@ void Tema1::OnMouseMove(int mouseX, int mouseY, int deltaX, int deltaY)
 
 void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
 {
+    if (button == GLFW_MOUSE_BUTTON_2) {
+        glm::ivec2 cursorCoords;
+        cursorCoords = SimpleScene::window->GetCursorPosition();
+        cout << "registered click at: " << cursorCoords.x << " " << cursorCoords.y << "\n";
+
+        bool arrowClicked = false;
+        /* check if an arrow was clicked */
+        for (size_t i = 0; i < 2; i++) {
+            if (isArrowClicked(i, cursorCoords.x, cursorCoords.y)) {
+                arrowClicked = true;
+                unsigned int arrowID = GetClickedArrow(cursorCoords.x, cursorCoords.y);
+                if ((arrowID == 0) && (menu.currentSection > 0)) {
+                    // pressed left arrow, go to the previous section
+                    menu.currentSection--;
+                }
+                else if (arrowID == 1) {
+                    // pressed right arrow
+                    if (menu.currentSection == 2) {
+                        // exit the menu, enter the game
+                        showingMenu = false;
+                    }
+                    else {
+                        // pressed right arrow, go to the next section
+                        menu.currentSection++;
+                    }
+                }
+                cout << "arrow " << i <<" clicked!\n";
+            }
+        }
+        if (!arrowClicked) {
+            unsigned int clickedTextBox = GetClickedTextBox(cursorCoords.x, cursorCoords.y);
+            TextBoxAction(clickedTextBox);
+        }
+    }
 }
 
 

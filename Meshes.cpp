@@ -6,6 +6,14 @@
 using namespace std;
 using namespace m1;
 
+// Meshe colors
+
+#define COLOR_PURPLE  0.5,  0.4,   0.6
+#define COLOR_BROWN   0.5,  0.3,   0.2
+#define COLOR_GREEN   0.62, 0.87, 0.61
+#define COLOR_BLUE    0.47, 0.70, 0.81
+#define COLOR_WHITE   1,    1,    1
+
 void Tema1::CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices)
 {
     unsigned int VAO = 0;
@@ -272,7 +280,7 @@ void Tema1::AddHealthBarMesh()
     CreateMesh("health-bar", vertices, indices);
 }
 
-void Tema1::DrawProjectileTrajectories()
+void Tema1::DrawProjectileTrajectories(unsigned int tankScale)
 {
     /* Draw trajectory for tank1 projectile */
     for (size_t i = 0; i < MAX_TANKS_NR; i++) {
@@ -283,8 +291,8 @@ void Tema1::DrawProjectileTrajectories()
             vector<unsigned int> indices;
 
             // initialize projectile parameters
-            projectile.x0 = tanks[i].turretPosition.x + TURRET_LENGTH * cos(tanks[i].turretAngle + M_PI_2);
-            projectile.y0 = tanks[i].turretPosition.y + TURRET_LENGTH * sin(tanks[i].turretAngle + M_PI_2);
+            projectile.x0 = tanks[i].turretPosition.x + TURRET_LENGTH*tankScale * cos(tanks[i].turretAngle + M_PI_2);
+            projectile.y0 = tanks[i].turretPosition.y + TURRET_LENGTH*tankScale * sin(tanks[i].turretAngle + M_PI_2);
             projectile.x = projectile.x0;
             projectile.y = projectile.y0;
             projectile.initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tanks[i].turretAngle + M_PI_2);
@@ -300,9 +308,90 @@ void Tema1::DrawProjectileTrajectories()
 
                 modelMatrix = glm::mat3(1);
                 modelMatrix *= transform2D::Translate(projectile.x, projectile.y);
-                modelMatrix *= transform2D::Scale(PROJECTILE_SIZE / 2, PROJECTILE_SIZE / 2);
+                modelMatrix *= transform2D::Scale(PROJECTILE_SIZE*tankScale / 2, PROJECTILE_SIZE*tankScale / 2);
                 RenderMesh2D(meshes["projectile-trajectory"], shaders["VertexColor"], modelMatrix);
             }
         }
     }
 }
+
+void Tema1::AddMenuMeshes()
+{
+    vector<VertexFormat> vertices
+    {
+        VertexFormat(glm::vec3(-0.5f, -0.5f, 0), glm::vec3(MENU_BACKGROUND_COLOR)),   // Bottom-left     0
+        VertexFormat(glm::vec3(0.5f, -0.5f, 0), glm::vec3(MENU_BACKGROUND_COLOR)),    // Bottom-right    1
+        VertexFormat(glm::vec3(0.5f, 0.5f, 0), glm::vec3(MENU_BACKGROUND_COLOR)),     // Top-right       2
+        VertexFormat(glm::vec3(-0.5f, 0.5f, 0), glm::vec3(MENU_BACKGROUND_COLOR)),    // Top-left        3
+    };
+
+    vector<unsigned int> indices
+    {
+        0, 1, 2,
+        0, 2, 3,
+    };
+
+    // Create the mesh from the data
+    CreateMesh("menu-background", vertices, indices);
+
+    for (size_t i = 0; i < vertices.size(); i++){
+        vertices[i].color = glm::vec3(MENU_SECTION_BACKGROUND_COLOR);
+    }
+    // Create the mesh from the data
+    CreateMesh("menu-section-background", vertices, indices);
+
+
+    /* ----------------- BUTTONS ----------------- */
+
+    /* Add white button mesh */
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices[i].color = glm::vec3(COLOR_WHITE);
+    }
+    CreateMesh("button-white", vertices, indices);
+
+    /* Add brown button mesh */
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices[i].color = glm::vec3(COLOR_BROWN);
+    }
+    CreateMesh("button-brown", vertices, indices);
+
+    /* Add purple button mesh */
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices[i].color = glm::vec3(COLOR_PURPLE);
+    }
+    CreateMesh("button-purple", vertices, indices);
+
+    /* Add blue button mesh */
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices[i].color = glm::vec3(COLOR_BLUE);
+    }
+    CreateMesh("button-blue", vertices, indices);
+
+    /* Add green button mesh */
+    for (size_t i = 0; i < vertices.size(); i++) {
+        vertices[i].color = glm::vec3(COLOR_GREEN);
+    }
+    CreateMesh("button-green", vertices, indices);
+
+    /* ----------------- ARROW ----------------- */
+
+    // add right arrow mesh
+    vertices.clear();
+    indices.clear();
+
+    vertices = {
+        VertexFormat(glm::vec3(0, 0, 0), glm::vec3(MENU_BACKGROUND_COLOR)),          // Bottom-left     0
+        VertexFormat(glm::vec3(0.5f, 0.5f, 0), glm::vec3(MENU_BACKGROUND_COLOR)),    // Mid-right       1
+        VertexFormat(glm::vec3(0, 1, 0), glm::vec3(MENU_BACKGROUND_COLOR)),          // Top-left        2
+    };
+
+    indices = {
+        0, 1, 2,
+        0, 2, 3,
+    };
+
+    // Create the arrow mesh from the data
+    CreateMesh("menu-arrow", vertices, indices);
+
+}
+
