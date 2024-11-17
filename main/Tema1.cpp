@@ -875,8 +875,8 @@ void Tema1::OnKeyPress(int key, int mods)
             // launch the first available idle projectile
             if (tanks[0].projectiles[i].isIdle) {
                 tanks[0].projectiles[i].isIdle = false;
-                tanks[0].projectiles[i].x0 = tanks[0].turretPosition.x + TURRET_LENGTH * cos(tanks[0].turretAngle + M_PI_2);
-                tanks[0].projectiles[i].y0 = tanks[0].turretPosition.y + TURRET_LENGTH * sin(tanks[0].turretAngle + M_PI_2);
+                tanks[0].projectiles[i].x0 = tanks[0].turretPosition.x + tankScale * TURRET_LENGTH * cos(tanks[0].turretAngle + M_PI_2);
+                tanks[0].projectiles[i].y0 = tanks[0].turretPosition.y + tankScale * TURRET_LENGTH * sin(tanks[0].turretAngle + M_PI_2);
                 tanks[0].projectiles[i].x = tanks[0].projectiles[i].x0;
                 tanks[0].projectiles[i].y = tanks[0].projectiles[i].y0;
                 tanks[0].projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tanks[0].turretAngle + M_PI_2);
@@ -892,8 +892,8 @@ void Tema1::OnKeyPress(int key, int mods)
             // launch the first available idle projectile
             if (tanks[1].projectiles[i].isIdle) {
                 tanks[1].projectiles[i].isIdle = false;
-                tanks[1].projectiles[i].x0 = tanks[1].turretPosition.x + TURRET_LENGTH * cos(tanks[1].turretAngle + M_PI_2);
-                tanks[1].projectiles[i].y0 = tanks[1].turretPosition.y + TURRET_LENGTH * sin(tanks[1].turretAngle + M_PI_2);
+                tanks[1].projectiles[i].x0 = tanks[1].turretPosition.x + tankScale * TURRET_LENGTH * cos(tanks[1].turretAngle + M_PI_2);
+                tanks[1].projectiles[i].y0 = tanks[1].turretPosition.y + tankScale * TURRET_LENGTH * sin(tanks[1].turretAngle + M_PI_2);
                 tanks[1].projectiles[i].x = tanks[1].projectiles[i].x0;
                 tanks[1].projectiles[i].y = tanks[1].projectiles[i].y0;
                 tanks[1].projectiles[i].initialSpeedX = PROJECTILE_INITIAL_SPEED * cos(tanks[1].turretAngle + M_PI_2);
