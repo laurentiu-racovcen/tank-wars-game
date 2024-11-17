@@ -6,8 +6,7 @@
 using namespace std;
 using namespace m1;
 
-// Meshe colors
-
+// Mesh colors
 #define COLOR_PURPLE  0.5,  0.4,   0.6
 #define COLOR_BROWN   0.5,  0.3,   0.2
 #define COLOR_GREEN   0.62, 0.87, 0.61
@@ -340,7 +339,7 @@ void Tema1::AddMenuMeshes()
     // Create the mesh from the data
     CreateMesh("menu-section-background", vertices, indices);
 
-    /* ----------------- ARROW ----------------- */
+    /* ----------------- Arrow Mesh ----------------- */
 
     // add right arrow mesh
     vertices.clear();
@@ -362,3 +361,34 @@ void Tema1::AddMenuMeshes()
 
 }
 
+void Tema1::AddCloudMesh()
+{
+    unsigned int k = 35;
+    vector<VertexFormat> vertices;
+    vector<unsigned int> indices;
+    // initialize the first vertex (x,y) = (1,0) in the vertices vector
+
+    // add origin of (x,y) = (0, 0)
+    vertices.push_back(VertexFormat(glm::vec3(0, 0, 0), glm::vec3(COLOR_WHITE)));
+
+    // insert all the vertices of the disk
+    for (unsigned int i = 1; i <= k; i++) {
+        vertices.push_back(VertexFormat(glm::vec3(cos(((float)i / k) * 2 * 3.14f), sin(((float)i / k) * 2 * 3.14f), 0),
+            glm::vec3(COLOR_WHITE)));
+    }
+
+    // insert all the indices of the disk
+    for (unsigned int i = 2; i <= k; i++) {
+        indices.push_back(i);
+        indices.push_back(0);
+        indices.push_back(i - 1);
+    }
+
+    // add last triangle indices of the disk
+    indices.push_back(1);
+    indices.push_back(0);
+    indices.push_back(k);
+
+    // Actually create the mesh from the data
+    CreateMesh("cloud", vertices, indices);
+}

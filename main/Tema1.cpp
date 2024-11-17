@@ -14,7 +14,7 @@
 #define SKY_COLOR         0.5705, 0.688, 0.7529
 #define TERRAIN_COLOR     0.984, 0.8078, 0.290
 
-// scale factor on OY-axis
+// scale factor on Y-axis
 #define SCALE_Y           250
 
 // the function of the terrain
@@ -37,6 +37,11 @@
 
 // text colors
 #define YELLOW_COLOR     0.937, 0.749, 0.017
+
+
+// windows width
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
 
 using namespace std;
 using namespace m1;
@@ -62,13 +67,6 @@ void Tema1::Init()
     camera->Update();
     GetCameraInput()->SetActive(false);
 
-    // add square mesh for terrain generation
-    glm::vec3 corner = glm::vec3(0, 0, 0);
-    float squareSide = 1;
-
-    Mesh* square = object2D::CreateSquare("square", corner, squareSide, glm::vec3(TERRAIN_COLOR), true);
-    AddMeshToList(square);
-
     // initialize terrain_points vector
     for (unsigned int i = 0; i < MAX_TERRAIN_POINTS_NR; i++) {
         terrainPoints[i] = glm::vec2(0.0f, 0.0f);
@@ -86,11 +84,8 @@ void Tema1::Init()
     // initialize tanks number
     tanksNumber = 2;
 
-    // initialize tank size
+    // initialize tank scale from menu
     tankScale = 1;
-
-    // initialize theme
-    theme = "Simple";
 
     // initialize game data
     roundsNumber = 1;
@@ -101,9 +96,75 @@ void Tema1::Init()
 
     InitTanks();
 
+    AddAllMeshes();
+
+    // when opening the game, firstly show the menu
+    showingMenu = true;
+
+    // get window's resolution
+    window_width = SimpleScene::window->props.resolution.x;
+    window_height = SimpleScene::window->props.resolution.y;
+
+    // 2 sections: tank size + rounds number
+    unsigned int sectionsNumber = 2;
+
+    menu.sectionNameColor = glm::vec3(SECTION_NAME_COLOR);
+
+    menu.initMenuData(sectionsNumber, window_width/2, window_height/2.3f, window_width/2.3f, window_height/2);
+
+    // 3 text boxes for: tank size, "-", "+"
+    menu.sections[0] = MenuSection("Select*Tanks*Size", 0, 3);
+
+    // 3 text boxes for "-", "+" and rounds number
+    menu.sections[1] = MenuSection("Number*of*rounds", 1, 3);
+
+    // initialize sections' text boxes
+    for (size_t i = 0; i < menu.sectionsNumber; i++) {
+        menu.sections[i].initTextBoxes(window_width, window_height);
+        menu.sections[i].updateTexts(tankScale, roundsNumber);
+    }
+
+    // initialize clouds' vector and positions
+
+    for (size_t i = 0; i < CLOUD_DISKS_NUMBER; i++) {
+        clouds.push_back(glm::vec2(0, 0));
+    }
+
+    // initialize clouds' positions
+    for (size_t i = 0; i < clouds.size(); i++) {
+        clouds[i].x = i * 100;
+        clouds[i].y = window_height / 1.1f;
+    }
+
+    // initialize cloudStep, fro cloud movement
+    cloudStep = 0;
+
+    // initially, open menu's first section
+    menu.currentSection = 0;
+
+    // initialize glText
+    gltInit();
+
+    // initialize playAgainTextBox data
+    playAgainTextBox.text = "Click-to-Play-Again";
+    playAgainTextBox.posX = window_width / 3.5f;
+    playAgainTextBox.posY = window_height * 2 / 3;
+    playAgainTextBox.scale = 5.2f;
+    playAgainTextBox.isAligned = false;
+    playAgainTextBox.color = glm::vec3(1, 1, 1);
+}
+
+void Tema1::AddAllMeshes() {
+    // add square mesh for terrain generation
+    glm::vec3 corner = glm::vec3(0, 0, 0);
+    float squareSide = 1;
+
+    Mesh* square = object2D::CreateSquare("square", corner, squareSide, glm::vec3(TERRAIN_COLOR), true);
+    AddMeshToList(square);
+
     // add tanks' meshes
-    AddTankMesh(0, glm::vec3 (TANK0_COLOR));
-    AddTankMesh(1, glm::vec3 (TANK1_COLOR));
+    AddTankMesh(0, glm::vec3(TANK0_COLOR));
+    AddTankMesh(1, glm::vec3(TANK1_COLOR));
 
     // add tank turret mesh
     AddTankTurretMesh();
@@ -118,50 +179,7 @@ void Tema1::Init()
     AddProjectileTrajectoryMesh();
 
     AddMenuMeshes();
-
-    // when opening the game, firstly show the menu
-    showingMenu = true;
-
-    // get window's resolution
-    window_width = SimpleScene::window->props.resolution.x;
-    window_height = SimpleScene::window->props.resolution.y;
-
-    unsigned int sectionsNumber = 3;
-
-    menu.sectionNameColor = glm::vec3(SECTION_NAME_COLOR);
-
-    menu.initMenuData(sectionsNumber, window_width/2, window_height/2.3f, window_width/2.3f, window_height/2);
-
-    // 3 text boxes for: tank size, "-", "+"
-    menu.sections[0] = MenuSection("Select*Tanks*Size", 0, 3);
-
-    /* Theme section */
-    // 4 text boxes for 4 themes
-    menu.sections[1] = MenuSection("Theme-Selection", 1, 4);
-
-    /* Number of rounds section */
-    // 3 text boxes for "-", "+" and rounds number
-    menu.sections[2] = MenuSection("Number-of-rounds", 2, 3);
-
-    // initialize sections' text boxes
-    for (size_t i = 0; i < menu.sectionsNumber; i++) {
-        menu.sections[i].initTextBoxes(window_width, window_height);
-        menu.sections[i].updateTexts(tankScale, roundsNumber);
-    }
-
-    // open menu's first section
-    menu.currentSection = 0;
-
-    // initialize glText
-    gltInit();
-
-    // initialize playAgainTextBox
-    playAgainTextBox.text = "*Play-Again*";
-    playAgainTextBox.posX = window_width / 2.82f;
-    playAgainTextBox.posY = window_height * 2 / 3;
-    playAgainTextBox.scale = 5.2f;
-    playAgainTextBox.isAligned = false;
-    playAgainTextBox.color = glm::vec3(1, 1, 1);
+    AddCloudMesh();
 }
 
 void Tema1::InitTanks() {
@@ -185,7 +203,7 @@ void Tema1::InitTanks() {
         // initialize tanks' health
         tanks[i].health = 100;
     }
-    // reinitialize projectiles data
+    // initialize projectiles data
     InitTanksProjectilesData();
 }
 
@@ -196,7 +214,7 @@ float Tema1::TerrainFunction(float x)
 
 void Tema1::FillTerrainVector(float startX, float endX)
 {
-    terrainPointsNr = 1920 / windowSegmentSizeX + 1; // 1 extra point to complete the graph
+    terrainPointsNr = WINDOW_WIDTH / windowSegmentSizeX + 1; // 1 extra point to complete the graph
     float functionSegmentSizeX = (endX - startX) / terrainPointsNr;
 
     for (size_t i = 0; i < terrainPointsNr; i++) {
@@ -218,18 +236,18 @@ void Tema1::InitTanksProjectilesData()
 
 void Tema1::FrameStart()
 {
-    // Clears the color buffer (using the previously set color) and depth buffer
+    // clears the color buffer (using the previously set color) and depth buffer
     glClearColor(SKY_COLOR, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glm::ivec2 resolution = window->GetResolution();
-    // Sets the screen area where to draw
+    // sets the screen area where to draw
     glViewport(0, 0, resolution.x, resolution.y);
 }
 
 void Tema1::UpdateTerrain(float deltaTimeSeconds)
 {
-    /* ------------- Sliding animation ------------- */
+    /* ------------- Landslide Animation ------------- */
 
     // check if any of the array points have a higher difference than the threshold
     bool isHigherPoint = false;
@@ -238,13 +256,10 @@ void Tema1::UpdateTerrain(float deltaTimeSeconds)
         // check if is higher than the limit
         if (dy > SLIDING_THRESHOLD) {
             isHigherPoint = true;
-            //cout << "diff = " << dy << "\n";
         }
     }
-    if (!isHigherPoint) cout << "Done sliding!\n";
 
     for (unsigned int i = 0; i < terrainPointsNr; i++) {
-        /* landslide animation */
         // deltaTime limitation in order to NOT get too much terrain difference on lag/freeze
         if (isHigherPoint && deltaTimeSeconds < 0.1f) {
             // compute the height difference and set the landslide speed
@@ -298,7 +313,7 @@ float Tema1::GetPositionY(float x)
     glm::vec2 B = terrainPoints[indexB];
     float t = (x - A.x) / (B.x - A.x);
 
-    // limit tanks' height to y = 0
+    // limit tanks' Y-coordinate to 0
     if (A.y + t * (B.y - A.y) < 0) {
         return 0;
     }
@@ -347,8 +362,10 @@ void Tema1::RenderTanksComponents(float deltaTimeSeconds)
 
             // tank health bar
             modelMatrix = glm::mat3(1);
+
             // move the health bar to the left by "consumed health/2"
             modelMatrix *= transform2D::Translate(-(((MAX_HEALTH_POINTS - tanks[i].health) / MAX_HEALTH_POINTS) * 5.4 * tankScale*DEFAULT_TANK_SIZE / 2) / 2, 0);
+
             // translate the health bar above the tank
             modelMatrix *= transform2D::Translate(tanks[i].positionX, tanks[i].positionY + tankScale*DEFAULT_TANK_SIZE * 2.5f);
             modelMatrix *= transform2D::Scale((tankScale*DEFAULT_TANK_SIZE / 2) * (tanks[i].health / MAX_HEALTH_POINTS), tankScale*DEFAULT_TANK_SIZE / 2);
@@ -360,7 +377,7 @@ void Tema1::RenderTanksComponents(float deltaTimeSeconds)
             modelMatrix *= transform2D::Rotate(tanks[i].rotationAngle);
             modelMatrix *= transform2D::Scale(tankScale*DEFAULT_TANK_SIZE, tankScale*DEFAULT_TANK_SIZE);
 
-            string meshID = "tank-" + to_string(i); // e.g. tank-0, tank-1, etc
+            string meshID = "tank-" + to_string(i); // e.g. tank-0, tank-1, etc.
             RenderMesh2D(meshes[meshID.c_str()], shaders["VertexColor"], modelMatrix);
 
             // tank turret
@@ -390,7 +407,7 @@ void Tema1::ProjectileTerrainCollision(float x) {
     int collisionIndex = x / windowSegmentSizeX;
 
     if ((collisionIndex >= 0) && (collisionIndex <= terrainPointsNr)) {
-        // if the radius is outside the smaller limit (0), make changes starting with terrainPoints[0]
+        // if the radius is outside the smaller limit (x<0), make changes starting with terrainPoints[0]
         for (size_t i = std::max(0, collisionIndex - collisionPointsNr / 2); i <= collisionIndex + collisionPointsNr / 2; i++) {
             float dx = abs(terrainPoints[collisionIndex].x - terrainPoints[i].x);
             float dy = sqrt(EXPLOSION_RADIUS * EXPLOSION_RADIUS - dx * dx);
@@ -430,7 +447,6 @@ void Tema1::CameraShake(float deltaTimeSeconds) {
     } else {
         // the camera becomes static
         cameraIsShaking = false;
-        //cout << "shake done!";
     }
 }
 
@@ -450,7 +466,6 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
     }
 
     // compute the position of all tanks' projectiles
-
     for (size_t i = 0; i < tanksNumber; i++) {
         for (size_t j = 0; j < MAX_PROJECTILES_NR; j++) {
             if (!tanks[i].projectiles[j].isIdle) {
@@ -469,18 +484,16 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                                 // perform camera shake
                                 cameraIsShaking = true;
                                 cameraShakeDirection = 'N';
-                                cout << "new health of tank" << k << ": " << tanks[k].health << "\n";
                                 if (tanks[k].health <= 0) {
                                     if (k == 0) {
                                         // first tank has lost this round
                                         tank1Score += 1;
-                                        cout << "updated tank1 score = " << tank1Score << "\n";
                                         if (tank1Score == roundsNumber / 2 + 1) {
-                                            // tank1 is the winner
+                                            // tank2 is the winner
                                             // the game finished
                                             gameFinished = true;
                                         } else if (currentRound == roundsNumber){
-                                            // it's a tie!
+                                            // it's a tie
                                             gameFinished = true;
                                         } else {
                                             // the game continues
@@ -494,13 +507,12 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                                     } else if (k == 1) {
                                         // second tank has lost this round
                                         tank0Score += 1;
-                                        cout << "updated tank0 score = " << tank0Score << "\n";
                                         if (tank0Score == roundsNumber / 2 + 1) {
                                             // tank1 is the winner
                                             // the game finished
                                             gameFinished = true;
                                         } else if (currentRound == roundsNumber) {
-                                            // it's a tie!
+                                            // it's a tie
                                             gameFinished = true;
                                         } else {
                                             // the game continues
@@ -558,23 +570,12 @@ void Tema1::RenderText(string text, float posX, float posY, float scale, glm::ve
     gltColor(color.x, color.y, color.z, 1.0f);
 
     if (isAligned) {
-        //cout << "the text *" << text << "* is aligned!\n";
         gltDrawText2DAligned(text_struct, (GLfloat)window_width / 2, posY, scale, GLT_CENTER, GLT_CENTER);
     } else {
-        //cout << "the text *" << text << "* is NOT aligned!\n";
         gltDrawText2D(text_struct, posX, posY, scale);
     }
 
     glEnable(GL_DEPTH_TEST);
-
-    //// Finish drawing text
-    //gltEndDraw();
-
-    //// Deleting text
-    //gltDeleteText(text);
-
-    //// Destroy glText
-    //gltTerminate();
 }
 
 void Tema1::RenderMenuBg(float deltaTimeSeconds)
@@ -601,7 +602,7 @@ void Tema1::RenderSection(float deltaTimeSeconds)
 
     for (size_t i = 0; i < menu.sections[menu.currentSection].textBoxesNr; i++) {
         if (menu.sections[menu.currentSection].textBoxes[i].text != "") {
-            /* render button text */
+            /* render textbox */
             RenderText(menu.sections[menu.currentSection].textBoxes[i].text,
                 menu.sections[menu.currentSection].textBoxes[i].posX,
                 menu.sections[menu.currentSection].textBoxes[i].posY,
@@ -611,36 +612,23 @@ void Tema1::RenderSection(float deltaTimeSeconds)
         }
     }
 
+    /* render menu background */
     RenderMenuBg(deltaTimeSeconds);
 }
 
-//void Tema1::RenderButton(Button button) {
-//    modelMatrix = glm::mat3(1);
-//    modelMatrix *= transform2D::Translate(button.posX, button.posY);
-//    modelMatrix *= transform2D::Scale(button.scaleX, button.scaleY);
-//
-//    RenderMesh2D(meshes["button-" + button.color], shaders["VertexColor"], modelMatrix);
-//}
-
-void Tema1::RenderMenuArrows(float deltaTimeSeconds)
+void Tema1::RenderMenu(float deltaTimeSeconds)
 {
     window_width = SimpleScene::window->props.resolution.x;
     window_height = SimpleScene::window->props.resolution.y;
 
-    // show current section's buttons
     if (menu.currentSection == 0) {
         // add only right menu arrow
         modelMatrix = glm::mat3(1);
         modelMatrix *= transform2D::Translate(1.0f * window_width / 1.355f, 1.0f * window_height / 2.8f);
         modelMatrix *= transform2D::Scale(1.0f * window_width / 9, 1.0f * menu.height / 3.5f);
         RenderMesh2D(meshes["menu-arrow"], shaders["VertexColor"], modelMatrix);
-
-        //int right_arrow_x = modelMatrix[2][0];
-        //int right_arrow_y = modelMatrix[2][1];
-        //cout << "right arrow x = " << right_arrow_x << "\n" << "right arrow y = " << right_arrow_y << "\n";
-
-    } else if (menu.currentSection > 0) {
-
+    }
+    else if (menu.currentSection > 0) {
         // add left menu arrow
         modelMatrix = glm::mat3(1);
         modelMatrix *= transform2D::Translate(1.0f * window_width / 3.79f, 1.0f * window_height / 2.0f);
@@ -655,12 +643,7 @@ void Tema1::RenderMenuArrows(float deltaTimeSeconds)
         RenderMesh2D(meshes["menu-arrow"], shaders["VertexColor"], modelMatrix);
     }
 
-    //// render current sections' buttons
-    //for (size_t i = 0; i < menu.sections[menu.currentSection].buttonsNumber; i++) {
-    //    RenderButton(menu.sections[menu.currentSection].buttons[i]);
-    //}
-
-    // render section background
+    // render current section
     RenderSection(deltaTimeSeconds);
 }
 
@@ -678,10 +661,10 @@ bool Tema1::isArrowClicked(unsigned int arrowID, int cursorX, int cursorY)
         float arrowPosX = 1.0f * window_width / 3.79f;
         float arrowPosY = window_height - (1.0f * window_height / 2.0f);
         
+        // check X coordinate
         if ((cursorX < arrowPosX) && (cursorX > arrowPosX - arrowScaleX)) {
             // check Y coordinate
             if ((cursorY < arrowPosY) && (cursorY > arrowPosY - arrowScaleY)) {
-                // check Y coordinate
                 return true;
             }
         }
@@ -689,10 +672,10 @@ bool Tema1::isArrowClicked(unsigned int arrowID, int cursorX, int cursorY)
         // checking right arrow
         float arrowPosX = (1.0f * window_width / 1.355f);
         float arrowPosY = window_height - (1.0f * window_height / 2.8f);
+        // check X coordinate
         if ((cursorX > arrowPosX) && (cursorX < arrowPosX + arrowScaleX)) {
             // check Y coordinate
             if ((cursorY < arrowPosY) && (cursorY > arrowPosY - arrowScaleY)) {
-                // check Y coordinate
                 return true;
             }
         }
@@ -715,8 +698,7 @@ bool Tema1::isTextboxClicked(TextBox textbox, int cursorX, int cursorY)
     if ((cursorX > textbox.posX) && (cursorX < textbox.posX + textbox.scale * textbox.text.length() * 9)) {
         // cursor is in the width limits of this textbox
         if ((cursorY > textbox.posY) && (cursorY < textbox.posY + textbox.scale * 16)) {
-            // cursor is in the width limits of this textbox
-            cout << "The textbox -- " << textbox.text << " -- has been clicked!\n";
+            // cursor is in the height limits of this textbox
             return true;
         }
     }
@@ -737,8 +719,7 @@ bool Tema1::isPlayAgainClicked(int cursorX, int cursorY) {
     if ((cursorX > playAgainTextBox.posX) && (cursorX < playAgainTextBox.posX + playAgainTextBox.scale * playAgainTextBox.text.length() * 9)) {
         // cursor is in the width limits of this textbox
         if ((cursorY > playAgainTextBox.posY) && (cursorY < playAgainTextBox.posY + playAgainTextBox.scale * 16)) {
-            // cursor is in the width limits of this textbox
-            cout << "The textbox -- " << playAgainTextBox.text << " -- has been clicked!\n";
+            // cursor is in the height limits of this textbox
             return true;
         }
     }
@@ -747,7 +728,7 @@ bool Tema1::isPlayAgainClicked(int cursorX, int cursorY) {
 
 void Tema1::SectionTextBoxAction(unsigned int TextBoxIndex) {
     if (menu.currentSection == 0) {
-        // tankSize section
+        // Tank Size section
         if (TextBoxIndex == 0) {
             // decrement tankSize
             if (tankScale > 1) {
@@ -760,21 +741,6 @@ void Tema1::SectionTextBoxAction(unsigned int TextBoxIndex) {
             }
         }
     } else if (menu.currentSection == 1) {
-        // theme section
-        if (TextBoxIndex == 0) {
-            // select Simple Theme
-            theme = "Simple";
-        } else if (TextBoxIndex == 1) {
-            // select Jungle Theme
-            theme = "Jungle";
-        } else if (TextBoxIndex == 2) {
-            // select Mud Theme
-            theme = "Mud";
-        } else if (TextBoxIndex == 2) {
-            // select Ice Theme
-            theme = "Ice";
-        }
-    } else if (menu.currentSection == 2) {
         // Number of rounds section
         if (TextBoxIndex == 0) {
             // decrement rounds number
@@ -799,6 +765,35 @@ void Tema1::RenderPlayerScores() {
     RenderText("Tank2-Score: " + to_string(tank1Score), window_width - window_width / 4, window_height / 15, 3, glm::vec3(TANK1_COLOR), false);
 }
 
+void Tema1::RenderClouds(float deltaTimeSeconds) {
+    // get window's resolution
+    window_width = SimpleScene::window->props.resolution.x;
+    window_height = SimpleScene::window->props.resolution.y;
+
+    cloudStep += 50 * deltaTimeSeconds;
+
+    for (size_t i = 0; i < clouds.size(); i++) {
+
+        if (clouds[i].x >= window_width + 100) {
+            // reset clouds to x=-100
+            clouds[i].x = -100;
+        }
+
+        // update clouds' position
+        clouds[i].x += 20 * deltaTimeSeconds;
+        clouds[i].y = window_height + 3 * sin(0.05 * cloudStep);
+
+        modelMatrix = glm::mat3(1);
+        modelMatrix *= transform2D::Translate(clouds[i].x, clouds[i].y);
+        if (i % 2) {
+            modelMatrix *= transform2D::Scale(1.0f * window_width / 20, 1.0f * window_width / 20);
+        } else {
+            modelMatrix *= transform2D::Scale(1.0f * window_width / 18, 1.0f * window_width / 18);
+        }
+        RenderMesh2D(meshes["cloud"], shaders["VertexColor"], modelMatrix);
+    }
+}
+
 void Tema1::Update(float deltaTimeSeconds)
 {
     if (showingMenu) {
@@ -812,9 +807,8 @@ void Tema1::Update(float deltaTimeSeconds)
         menu.updateData(window_width / 2, window_height / 2.3f, window_width / 2.3f, window_height / 2);
 
         // render the menu
-        RenderMenuArrows(deltaTimeSeconds);
+        RenderMenu(deltaTimeSeconds);
     } else if (gameFinished) {
-        //cout << "The game has been finished, score1=" << tank0Score << " score2=" << tank1Score << "\n";
         if (tank0Score > tank1Score) {
             RenderText("The WINNER is Tank1!", 0, 1.0f*window_height / 2.5f, 8, glm::vec3(YELLOW_COLOR), true);
         } else if (tank1Score > tank0Score) {
@@ -826,6 +820,7 @@ void Tema1::Update(float deltaTimeSeconds)
     } else {
         UpdateTerrain(deltaTimeSeconds);
         GenerateTerrain();
+        RenderClouds(deltaTimeSeconds);
         RenderTanksComponents(deltaTimeSeconds);
         DrawProjectileTrajectories(tankScale);
         RenderPlayerScores();
@@ -839,7 +834,7 @@ void Tema1::FrameEnd()
 void Tema1::OnInputUpdate(float deltaTime, int mods)
 {
     if (tanks[0].health > 0) {
-        // left-right movement (with OX-axis window limits)
+        // left-right movement (with X-axis window limits)
         if ((window->KeyHold(GLFW_KEY_A) == true) && (tanks[0].positionX - deltaTime * TANK_SPEED > 0)) {
             tanks[0].positionX -= deltaTime * TANK_SPEED;
         }
@@ -925,11 +920,8 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
     if (button == GLFW_MOUSE_BUTTON_2) {
         glm::ivec2 cursorCoords;
         cursorCoords = SimpleScene::window->GetCursorPosition();
-        cout << "registered click at: " << cursorCoords.x << " " << cursorCoords.y << "\n";
-
         if (gameFinished) {
             if(isPlayAgainClicked(cursorCoords.x, cursorCoords.y)) {
-                cout << "play again clicked!\n";
                 Tema1::Init();
             }
         } else {
@@ -945,7 +937,7 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
                     }
                     else if (arrowID == 1) {
                         // pressed right arrow
-                        if (menu.currentSection == 2) {
+                        if (menu.currentSection == menu.sectionsNumber - 1) {
                             // exit the menu, enter the game
                             showingMenu = false;
                         }
@@ -954,7 +946,6 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
                             menu.currentSection++;
                         }
                     }
-                    cout << "arrow " << i << " clicked!\n";
                 }
             }
             if (!arrowClicked) {
@@ -967,7 +958,6 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
         }
     }
 }
-
 
 void Tema1::OnMouseBtnRelease(int mouseX, int mouseY, int button, int mods)
 {

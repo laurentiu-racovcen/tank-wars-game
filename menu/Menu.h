@@ -23,13 +23,4 @@ class Menu {
 		~Menu(){};
 		void initMenuData(unsigned int sectionsNumber, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
 		void updateData(unsigned int posX, unsigned int posY, unsigned int width, unsigned int height);
-
-	/*	Menu(unsigned int sectionsNumber, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height) {
-			this->sectionsNumber = sectionsNumber;
-			this->posX = posX;
-			this->posY = posY;
-			this->width = width;
-			this->height = height;
-			backgroundColor = glm::vec3(MENU_BACKGROUND_COLOR);
-		}*/
 };

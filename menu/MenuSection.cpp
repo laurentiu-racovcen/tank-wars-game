@@ -35,12 +35,6 @@ void MenuSection::initTextBoxes(int windowWidth, int windowHeight) {
 		textBoxes[2].isAligned = true;
 
 	} else if (this->sectionNr == 1) {
-		// Current section is "Theme"
-		textBoxes[0].text = "Simple";
-		textBoxes[1].text = "Jungle";
-		textBoxes[2].text = "Mud";
-		textBoxes[3].text = "Ice";
-	} else if (this->sectionNr == 2) {
 		// Current section is "Number of rounds"
 
 		// rounds nr minus
@@ -75,11 +69,10 @@ void MenuSection::updateTexts(unsigned int tankSize, unsigned int roundsNumber) 
 
 		// update tankSize
 		textBoxes[2].text = std::to_string(tankSize);
-	} else if (this->sectionNr == 2) {
+	} else if (this->sectionNr == 1) {
 		// Current section is "Number of rounds"
 
 		// update roundsNumber
 		textBoxes[2].text = std::to_string(roundsNumber);
 	}
 }
-

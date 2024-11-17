@@ -3,10 +3,12 @@
 #include "components/simple_scene.h"
 #include "lab_m1/Tema1/tank/Tank.h"
 #include "lab_m1/Tema1/menu/Menu.h"
+#include <vector>
 
 // for 1920x1080 resolution is enough
 #define MAX_TERRAIN_POINTS_NR 2000
 #define MAX_TANKS_NR 4
+#define CLOUD_DISKS_NUMBER 100
 
 namespace m1
 {
@@ -20,6 +22,7 @@ namespace m1
 
     private:
         void CreateMesh(const char* name, const std::vector<VertexFormat>& vertices, const std::vector<unsigned int>& indices);
+        void AddAllMeshes();
         void AddTankMesh(unsigned int index, glm::vec3 color);
         void AddTankTurretMesh();
         void AddTankProjectileMesh();
@@ -28,6 +31,7 @@ namespace m1
         void AddHealthBarMesh();
         void DrawProjectileTrajectories(unsigned int tankScale);
         void AddMenuMeshes();
+        void AddCloudMesh();
 
         void FrameStart() override;
         void Update(float deltaTimeSeconds) override;
@@ -53,9 +57,10 @@ namespace m1
         void RenderTanksProjectiles(float deltaTimeSeconds);
         void RenderMenuBg(float deltaTimeSeconds);
         void RenderSection(float deltaTimeSeconds);
-        void RenderMenuArrows(float deltaTimeSeconds);
+        void RenderMenu(float deltaTimeSeconds);
         void RenderText(std::string text, float posX, float posY, float scale, glm::vec3 color, bool isAligned);
         void RenderPlayerScores();
+        void RenderClouds(float deltaTimeSeconds);
         float GetPositionY(float x);
         float GetTankAngle(float x);
         float GetProjectilePositionY(float y0, float initialSpeedY, float t);
@@ -84,12 +89,13 @@ namespace m1
         int window_width;
         int window_height;
         unsigned int tankScale;
-        std::string theme;
         unsigned int roundsNumber;
         unsigned int currentRound;
         unsigned int tank0Score;
         unsigned int tank1Score;
         bool gameFinished;
         TextBox playAgainTextBox;
+        std::vector<glm::vec2> clouds;
+        float cloudStep;
     };
 }   // namespace m1
