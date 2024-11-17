@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "TextBox.h"
+#include "lab_m1/Tema1/textbox/TextBox.h"
 
 #define MENU_SECTION_BACKGROUND_COLOR   0.909, 0.89, 0.87
 #define MAX_BUTTONS_NUMBER		        5
@@ -14,7 +14,7 @@ class MenuSection {
 		std::vector<TextBox> textBoxes;
 
 		MenuSection(){};
-		MenuSection(std::string name, unsigned int sectionNr, unsigned int textBoxesNr, unsigned int textsNr) {
+		MenuSection(std::string name, unsigned int sectionNr, unsigned int textBoxesNr) {
 			this->name = name;
 			this->textBoxesNr = textBoxesNr;
 			this->sectionNr = sectionNr;

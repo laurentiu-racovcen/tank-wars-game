@@ -1,10 +1,10 @@
-#include "lab_m1/Tema1/Tema1.h"
+#include "lab_m1/Tema1/main/Tema1.h"
 
 #include <vector>
 #include <iostream>
 
-#include "lab_m1/Tema1/transform2D.h"
-#include "lab_m1/Tema1/Object2D.h"
+#include "lab_m1/Tema1/meshes/transform2D.h"
+#include "lab_m1/Tema1/meshes/Object2D.h"
 
 // text library
 #define GLT_IMPLEMENTATION
@@ -34,6 +34,9 @@
 #define EXPLOSION_RADIUS 80.0f
 
 #define GAME_TITLE_COLOR 1, 1, 1
+
+// text colors
+#define YELLOW_COLOR     0.937, 0.749, 0.017
 
 using namespace std;
 using namespace m1;
@@ -85,30 +88,18 @@ void Tema1::Init()
 
     // initialize tank size
     tankScale = 1;
+
+    // initialize theme
     theme = "Simple";
+
+    // initialize game data
     roundsNumber = 1;
+    currentRound = 1;
+    tank0Score = 0;
+    tank1Score = 0;
+    gameFinished = false;
 
-    // initialize tanks position
-    tanks[0].positionX = TANK1_INITIAL_X_POS;
-    tanks[1].positionX = TANK2_INITIAL_X_POS;
-
-    for (size_t i = 0; i < tanksNumber; i++) {
-        // initialize tank's Y position
-        tanks[i].positionY = GetPositionY(tanks[i].positionX);
-
-        // center of the tank's bottom side
-        tanks[i].cx = 50;
-        
-        // initialize turret angle to point upwards
-        tanks[i].turretAngle = 0;
-
-        // initialize turret's position
-        tanks[i].turretPosition = glm::vec2(tanks[i].positionX, tanks[i].positionY);
-
-        // initialize tanks' health
-        tanks[i].health = 100;
-
-    }
+    InitTanks();
 
     // add tanks' meshes
     AddTankMesh(0, glm::vec3 (TANK0_COLOR));
@@ -123,7 +114,6 @@ void Tema1::Init()
 
     // add and init tank projectile mesh
     AddTankProjectileMesh();
-    InitTanksProjectilesData();
 
     AddProjectileTrajectoryMesh();
 
@@ -142,21 +132,18 @@ void Tema1::Init()
 
     menu.initMenuData(sectionsNumber, window_width/2, window_height/2.3f, window_width/2.3f, window_height/2);
 
-    // 2 buttons for tank size + 2*9 for tanks colors
-    // 5 texts for: tank size, "-", "+", 2 tanks strings
-    menu.sections[0] = MenuSection("Select*Tanks*Size", 0, 2 + 2 * 9, 5);
+    // 3 text boxes for: tank size, "-", "+"
+    menu.sections[0] = MenuSection("Select*Tanks*Size", 0, 3);
 
     /* Theme section */
-    // 4 buttons for 4 themes
-    // 4 texts for 4 themes
-    menu.sections[1] = MenuSection("Theme-Selection", 1, 4, 4);
+    // 4 text boxes for 4 themes
+    menu.sections[1] = MenuSection("Theme-Selection", 1, 4);
 
     /* Number of rounds section */
-    // 2 buttons for round incremention/decrementation
-    // 3 texts for "-", "+" and rounds number
-    menu.sections[2] = MenuSection("Number-of-rounds", 2, 2, 3);
+    // 3 text boxes for "-", "+" and rounds number
+    menu.sections[2] = MenuSection("Number-of-rounds", 2, 3);
 
-    // initialize sections' buttons and texts
+    // initialize sections' text boxes
     for (size_t i = 0; i < menu.sectionsNumber; i++) {
         menu.sections[i].initTextBoxes(window_width, window_height);
         menu.sections[i].updateTexts(tankScale, roundsNumber);
@@ -168,6 +155,38 @@ void Tema1::Init()
     // initialize glText
     gltInit();
 
+    // initialize playAgainTextBox
+    playAgainTextBox.text = "*Play-Again*";
+    playAgainTextBox.posX = window_width / 2.82f;
+    playAgainTextBox.posY = window_height * 2 / 3;
+    playAgainTextBox.scale = 5.2f;
+    playAgainTextBox.isAligned = false;
+    playAgainTextBox.color = glm::vec3(1, 1, 1);
+}
+
+void Tema1::InitTanks() {
+    // initialize tanks position
+    tanks[0].positionX = TANK1_INITIAL_X_POS;
+    tanks[1].positionX = TANK2_INITIAL_X_POS;
+
+    for (size_t i = 0; i < tanksNumber; i++) {
+        // initialize tank's Y position
+        tanks[i].positionY = GetPositionY(tanks[i].positionX);
+
+        // center of the tank's bottom side
+        tanks[i].cx = 50;
+
+        // initialize turret angle to point upwards
+        tanks[i].turretAngle = 0;
+
+        // initialize turret's position
+        tanks[i].turretPosition = glm::vec2(tanks[i].positionX, tanks[i].positionY);
+
+        // initialize tanks' health
+        tanks[i].health = 100;
+    }
+    // reinitialize projectiles data
+    InitTanksProjectilesData();
 }
 
 float Tema1::TerrainFunction(float x)
@@ -451,6 +470,48 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
                                 cameraIsShaking = true;
                                 cameraShakeDirection = 'N';
                                 cout << "new health of tank" << k << ": " << tanks[k].health << "\n";
+                                if (tanks[k].health <= 0) {
+                                    if (k == 0) {
+                                        // first tank has lost this round
+                                        tank1Score += 1;
+                                        cout << "updated tank1 score = " << tank1Score << "\n";
+                                        if (tank1Score == roundsNumber / 2 + 1) {
+                                            // tank1 is the winner
+                                            // the game finished
+                                            gameFinished = true;
+                                        } else if (currentRound == roundsNumber){
+                                            // it's a tie!
+                                            gameFinished = true;
+                                        } else {
+                                            // the game continues
+                                            currentRound += 1;
+                                            // re-generate the terrain
+                                            FillTerrainVector(FUNCTION_START_X, FUNCTION_END_X);
+                                            // re-initialize the tanks
+                                            InitTanks();
+                                        }
+
+                                    } else if (k == 1) {
+                                        // second tank has lost this round
+                                        tank0Score += 1;
+                                        cout << "updated tank0 score = " << tank0Score << "\n";
+                                        if (tank0Score == roundsNumber / 2 + 1) {
+                                            // tank1 is the winner
+                                            // the game finished
+                                            gameFinished = true;
+                                        } else if (currentRound == roundsNumber) {
+                                            // it's a tie!
+                                            gameFinished = true;
+                                        } else {
+                                            // the game continues
+                                            currentRound += 1;
+                                            // re-generate the terrain
+                                            FillTerrainVector(FUNCTION_START_X, FUNCTION_END_X);
+                                            // re-initialize the tanks
+                                            InitTanks();
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -483,7 +544,8 @@ void Tema1::RenderTanksProjectiles(float deltaTimeSeconds)
     }
 }
 
-void Tema1::RenderText(string text, float posX, float posY, float scale, glm::vec3 color) {
+void Tema1::RenderText(string text, float posX, float posY, float scale, glm::vec3 color, bool isAligned) {
+
     glDisable(GL_DEPTH_TEST);
 
     // Creating text
@@ -494,7 +556,14 @@ void Tema1::RenderText(string text, float posX, float posY, float scale, glm::ve
     gltBeginDraw();
 
     gltColor(color.x, color.y, color.z, 1.0f);
-    gltDrawText2D(text_struct, posX, posY, scale);
+
+    if (isAligned) {
+        //cout << "the text *" << text << "* is aligned!\n";
+        gltDrawText2DAligned(text_struct, (GLfloat)window_width / 2, posY, scale, GLT_CENTER, GLT_CENTER);
+    } else {
+        //cout << "the text *" << text << "* is NOT aligned!\n";
+        gltDrawText2D(text_struct, posX, posY, scale);
+    }
 
     glEnable(GL_DEPTH_TEST);
 
@@ -515,7 +584,7 @@ void Tema1::RenderMenuBg(float deltaTimeSeconds)
     modelMatrix *= transform2D::Scale(menu.width, menu.height);
     RenderMesh2D(meshes["menu-background"], shaders["VertexColor"], modelMatrix);
 
-    RenderText("Tank-Wars", 1.0f*menu.posX/1.525f, 1.0f*menu.posY/ 2.8f, 8, glm::vec3(GAME_TITLE_COLOR));
+    RenderText("Tank-Wars", 0, 1.0f*menu.posY/ 2.3f, 8, glm::vec3(GAME_TITLE_COLOR), true);
 
 }
 
@@ -528,7 +597,7 @@ void Tema1::RenderSection(float deltaTimeSeconds)
     RenderMesh2D(meshes["menu-section-background"], shaders["VertexColor"], modelMatrix);
 
     /* render section name */
-    RenderText(menu.sections[menu.currentSection].name, 1.0f*window_width / 2.8f, 1.0f*window_height / 2.7f, 3.5f, menu.sectionNameColor);
+    RenderText(menu.sections[menu.currentSection].name, 0, 1.0f*window_height / 2.4f, 3.5f, menu.sectionNameColor, true);
 
     for (size_t i = 0; i < menu.sections[menu.currentSection].textBoxesNr; i++) {
         if (menu.sections[menu.currentSection].textBoxes[i].text != "") {
@@ -537,7 +606,8 @@ void Tema1::RenderSection(float deltaTimeSeconds)
                 menu.sections[menu.currentSection].textBoxes[i].posX,
                 menu.sections[menu.currentSection].textBoxes[i].posY,
                 menu.sections[menu.currentSection].textBoxes[i].scale,
-                menu.sections[menu.currentSection].textBoxes[i].color);
+                menu.sections[menu.currentSection].textBoxes[i].color,
+                menu.sections[menu.currentSection].textBoxes[i].isAligned);
         }
     }
 
@@ -644,7 +714,6 @@ bool Tema1::isTextboxClicked(TextBox textbox, int cursorX, int cursorY)
 {
     if ((cursorX > textbox.posX) && (cursorX < textbox.posX + textbox.scale * textbox.text.length() * 9)) {
         // cursor is in the width limits of this textbox
-        cout << "good X!\n";
         if ((cursorY > textbox.posY) && (cursorY < textbox.posY + textbox.scale * 16)) {
             // cursor is in the width limits of this textbox
             cout << "The textbox -- " << textbox.text << " -- has been clicked!\n";
@@ -655,7 +724,7 @@ bool Tema1::isTextboxClicked(TextBox textbox, int cursorX, int cursorY)
 }
 
 // return the mouse-clicked textbox
-int Tema1::GetClickedTextBox(unsigned int cursorX, unsigned int cursorY) {
+int Tema1::GetClickedSectionTextBox(unsigned int cursorX, unsigned int cursorY) {
     for (size_t i = 0; i < menu.sections[menu.currentSection].textBoxesNr; i++) {
         if (isTextboxClicked(menu.sections[menu.currentSection].textBoxes[i], cursorX, cursorY)) {
             return i;
@@ -664,7 +733,19 @@ int Tema1::GetClickedTextBox(unsigned int cursorX, unsigned int cursorY) {
     return -1;
 }
 
-void Tema1::TextBoxAction(unsigned int TextBoxIndex) {
+bool Tema1::isPlayAgainClicked(int cursorX, int cursorY) {
+    if ((cursorX > playAgainTextBox.posX) && (cursorX < playAgainTextBox.posX + playAgainTextBox.scale * playAgainTextBox.text.length() * 9)) {
+        // cursor is in the width limits of this textbox
+        if ((cursorY > playAgainTextBox.posY) && (cursorY < playAgainTextBox.posY + playAgainTextBox.scale * 16)) {
+            // cursor is in the width limits of this textbox
+            cout << "The textbox -- " << playAgainTextBox.text << " -- has been clicked!\n";
+            return true;
+        }
+    }
+    return false;
+}
+
+void Tema1::SectionTextBoxAction(unsigned int TextBoxIndex) {
     if (menu.currentSection == 0) {
         // tankSize section
         if (TextBoxIndex == 0) {
@@ -709,6 +790,15 @@ void Tema1::TextBoxAction(unsigned int TextBoxIndex) {
     }
 }
 
+void Tema1::RenderPlayerScores() {
+    // get window's resolution
+    window_width = SimpleScene::window->props.resolution.x;
+    window_height = SimpleScene::window->props.resolution.y;
+
+    RenderText("Tank1-Score: " + to_string(tank0Score), window_width / 15, window_height / 15, 3, glm::vec3(TANK0_COLOR), false);
+    RenderText("Tank2-Score: " + to_string(tank1Score), window_width - window_width / 4, window_height / 15, 3, glm::vec3(TANK1_COLOR), false);
+}
+
 void Tema1::Update(float deltaTimeSeconds)
 {
     if (showingMenu) {
@@ -723,11 +813,22 @@ void Tema1::Update(float deltaTimeSeconds)
 
         // render the menu
         RenderMenuArrows(deltaTimeSeconds);
+    } else if (gameFinished) {
+        //cout << "The game has been finished, score1=" << tank0Score << " score2=" << tank1Score << "\n";
+        if (tank0Score > tank1Score) {
+            RenderText("The WINNER is Tank1!", 0, 1.0f*window_height / 2.5f, 8, glm::vec3(YELLOW_COLOR), true);
+        } else if (tank1Score > tank0Score) {
+            RenderText("The WINNER is Tank2!", 0, 1.0f * window_height / 2.5f, 8, glm::vec3(YELLOW_COLOR), true);
+        } else {
+            RenderText("It`s a TIE!", 0, 1.0f * window_height / 2, 8, glm::vec3(1, 1, 1), true);
+        }
+        RenderText(playAgainTextBox.text, playAgainTextBox.posX, playAgainTextBox.posY, playAgainTextBox.scale, playAgainTextBox.color, playAgainTextBox.isAligned);
     } else {
         UpdateTerrain(deltaTimeSeconds);
         GenerateTerrain();
         RenderTanksComponents(deltaTimeSeconds);
         DrawProjectileTrajectories(tankScale);
+        RenderPlayerScores();
     }
 }
 
@@ -826,33 +927,43 @@ void Tema1::OnMouseBtnPress(int mouseX, int mouseY, int button, int mods)
         cursorCoords = SimpleScene::window->GetCursorPosition();
         cout << "registered click at: " << cursorCoords.x << " " << cursorCoords.y << "\n";
 
-        bool arrowClicked = false;
-        /* check if an arrow was clicked */
-        for (size_t i = 0; i < 2; i++) {
-            if (isArrowClicked(i, cursorCoords.x, cursorCoords.y)) {
-                arrowClicked = true;
-                unsigned int arrowID = GetClickedArrow(cursorCoords.x, cursorCoords.y);
-                if ((arrowID == 0) && (menu.currentSection > 0)) {
-                    // pressed left arrow, go to the previous section
-                    menu.currentSection--;
-                }
-                else if (arrowID == 1) {
-                    // pressed right arrow
-                    if (menu.currentSection == 2) {
-                        // exit the menu, enter the game
-                        showingMenu = false;
-                    }
-                    else {
-                        // pressed right arrow, go to the next section
-                        menu.currentSection++;
-                    }
-                }
-                cout << "arrow " << i <<" clicked!\n";
+        if (gameFinished) {
+            if(isPlayAgainClicked(cursorCoords.x, cursorCoords.y)) {
+                cout << "play again clicked!\n";
+                Tema1::Init();
             }
-        }
-        if (!arrowClicked) {
-            unsigned int clickedTextBox = GetClickedTextBox(cursorCoords.x, cursorCoords.y);
-            TextBoxAction(clickedTextBox);
+        } else {
+            bool arrowClicked = false;
+            /* check if an arrow was clicked */
+            for (size_t i = 0; i < 2; i++) {
+                if (isArrowClicked(i, cursorCoords.x, cursorCoords.y)) {
+                    arrowClicked = true;
+                    unsigned int arrowID = GetClickedArrow(cursorCoords.x, cursorCoords.y);
+                    if ((arrowID == 0) && (menu.currentSection > 0)) {
+                        // pressed left arrow, go to the previous section
+                        menu.currentSection--;
+                    }
+                    else if (arrowID == 1) {
+                        // pressed right arrow
+                        if (menu.currentSection == 2) {
+                            // exit the menu, enter the game
+                            showingMenu = false;
+                        }
+                        else {
+                            // pressed right arrow, go to the next section
+                            menu.currentSection++;
+                        }
+                    }
+                    cout << "arrow " << i << " clicked!\n";
+                }
+            }
+            if (!arrowClicked) {
+                unsigned int clickedTextBox = GetClickedSectionTextBox(cursorCoords.x, cursorCoords.y);
+                if (clickedTextBox != -1) {
+                    SectionTextBoxAction(clickedTextBox);
+                } // else, a section textbox has not been clicked
+
+            }
         }
     }
 }

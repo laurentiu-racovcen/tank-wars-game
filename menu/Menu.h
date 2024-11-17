@@ -2,7 +2,7 @@
 
 #include <vector>
 #include "components/simple_scene.h"
-#include "lab_m1/Tema1/MenuSection.h"
+#include "lab_m1/Tema1/menu/MenuSection.h"
 
 #define MENU_BACKGROUND_COLOR   0.8, 0.8, 0.8
 #define MAX_SECTIONS_NUMBER		5

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lab_m1/Tema1/Menu.h"
+#include "lab_m1/Tema1/menu/Menu.h"
 
 void Menu::initMenuData(unsigned int sectionsNumber, unsigned int posX, unsigned int posY, unsigned int width, unsigned int height) {
 	this->sectionsNumber = sectionsNumber;

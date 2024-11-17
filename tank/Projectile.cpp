@@ -1,4 +1,4 @@
-#include "lab_m1/Tema1/Projectile.h"
+#include "lab_m1/Tema1/tank/Projectile.h"
 
 void Projectile::ResetProjectile() {
 	isIdle = true;

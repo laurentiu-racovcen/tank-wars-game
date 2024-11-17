@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Projectile.h"
+#include "lab_m1/Tema1/tank/Projectile.h"
 #include "components/simple_scene.h"
 
 #define TANK0_COLOR          0.5, 0.3, 0.2

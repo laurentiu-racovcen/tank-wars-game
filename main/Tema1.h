@@ -1,8 +1,8 @@
 #pragma once
 
 #include "components/simple_scene.h"
-#include "Tank.h"
-#include "Menu.h"
+#include "lab_m1/Tema1/tank/Tank.h"
+#include "lab_m1/Tema1/menu/Menu.h"
 
 // for 1920x1080 resolution is enough
 #define MAX_TERRAIN_POINTS_NR 2000
@@ -48,23 +48,26 @@ namespace m1
         void GenerateTerrain();
         float TerrainFunction(float x);
         void InitTanksProjectilesData();
+        void InitTanks();
         void RenderTanksComponents(float deltaTimeSeconds);
         void RenderTanksProjectiles(float deltaTimeSeconds);
         void RenderMenuBg(float deltaTimeSeconds);
         void RenderSection(float deltaTimeSeconds);
         void RenderMenuArrows(float deltaTimeSeconds);
-        void RenderText(std::string text, float posX, float posY, float scale, glm::vec3 color);
+        void RenderText(std::string text, float posX, float posY, float scale, glm::vec3 color, bool isAligned);
+        void RenderPlayerScores();
         float GetPositionY(float x);
         float GetTankAngle(float x);
         float GetProjectilePositionY(float y0, float initialSpeedY, float t);
         void ProjectileTerrainCollision(float x);
         bool IsAnyTankNearProjectile(float x);
 
-        int GetClickedTextBox(unsigned int cursorX, unsigned int cursorY);
+        int GetClickedSectionTextBox(unsigned int cursorX, unsigned int cursorY);
         int GetClickedArrow(unsigned int cursorX, unsigned int cursorY);
-        void TextBoxAction(unsigned int TextBoxIndex);
+        void SectionTextBoxAction(unsigned int TextBoxIndex);
         bool isTextboxClicked(TextBox textbox, int cursorX, int cursorY);
         bool isArrowClicked(unsigned int arrowID, int cursorX, int cursorY);
+        bool isPlayAgainClicked(int cursorX, int cursorY);
     protected:
         glm::mat3 modelMatrix;
         glm::vec2 terrainPoints[MAX_TERRAIN_POINTS_NR];
@@ -83,5 +86,10 @@ namespace m1
         unsigned int tankScale;
         std::string theme;
         unsigned int roundsNumber;
+        unsigned int currentRound;
+        unsigned int tank0Score;
+        unsigned int tank1Score;
+        bool gameFinished;
+        TextBox playAgainTextBox;
     };
 }   // namespace m1

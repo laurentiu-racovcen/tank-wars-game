@@ -1,4 +1,4 @@
-#include "lab_m1/Tema1/Tank.h"
+#include "lab_m1/Tema1/tank/Tank.h"
 
 bool Tank::isNearProjectile(float projectileX, unsigned int tankScale)
 {

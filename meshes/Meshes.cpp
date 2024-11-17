@@ -1,7 +1,7 @@
 #pragma once
 
-#include "lab_m1/Tema1/Tema1.h"
-#include "lab_m1/Tema1/transform2D.h"
+#include "lab_m1/Tema1/main/Tema1.h"
+#include "lab_m1/Tema1/meshes/transform2D.h"
 
 using namespace std;
 using namespace m1;
@@ -339,39 +339,6 @@ void Tema1::AddMenuMeshes()
     }
     // Create the mesh from the data
     CreateMesh("menu-section-background", vertices, indices);
-
-
-    /* ----------------- BUTTONS ----------------- */
-
-    /* Add white button mesh */
-    for (size_t i = 0; i < vertices.size(); i++) {
-        vertices[i].color = glm::vec3(COLOR_WHITE);
-    }
-    CreateMesh("button-white", vertices, indices);
-
-    /* Add brown button mesh */
-    for (size_t i = 0; i < vertices.size(); i++) {
-        vertices[i].color = glm::vec3(COLOR_BROWN);
-    }
-    CreateMesh("button-brown", vertices, indices);
-
-    /* Add purple button mesh */
-    for (size_t i = 0; i < vertices.size(); i++) {
-        vertices[i].color = glm::vec3(COLOR_PURPLE);
-    }
-    CreateMesh("button-purple", vertices, indices);
-
-    /* Add blue button mesh */
-    for (size_t i = 0; i < vertices.size(); i++) {
-        vertices[i].color = glm::vec3(COLOR_BLUE);
-    }
-    CreateMesh("button-blue", vertices, indices);
-
-    /* Add green button mesh */
-    for (size_t i = 0; i < vertices.size(); i++) {
-        vertices[i].color = glm::vec3(COLOR_GREEN);
-    }
-    CreateMesh("button-green", vertices, indices);
 
     /* ----------------- ARROW ----------------- */
 
