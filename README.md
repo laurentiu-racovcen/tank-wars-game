@@ -2,6 +2,13 @@
 
 >This is a 2D tank combat game where two players control tanks on a destructible terrain, engaging in turn-based artillery combat. Players navigate the battlefield, aim their turrets, and fire projectiles to defeat their opponent across multiple rounds.
 
+<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+  <img src="images/img1.png" alt="Image 1" style="width: 49.7%;">
+  <img src="images/img2.png" alt="Image 2" style="width: 49.7%;">
+</div>
+
+![Image 3](images/img3.png)
+
 ## **Table of contents**
 
 1. [Introduction](#introduction)
